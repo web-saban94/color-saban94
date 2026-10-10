@@ -588,13 +588,35 @@ function doPost(e) {
                           <label className="block text-[11px] font-semibold text-slate-600 mb-1">חברה / יצרן:</label>
                           <select
                             value={newShadeManufacturer}
-                            onChange={(e) => setNewShadeManufacturer(e.target.value)}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setNewShadeManufacturer(val);
+                              if (val === 'RAL' || val === 'ח.סבן') {
+                                setNewShadeCollection('מניפת RAL');
+                              }
+                            }}
                             className="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:border-[#0B3B60]"
                           >
                             <option value="טמבור">טמבור</option>
                             <option value="נירלט">נירלט</option>
                             <option value="יעקבי">יעקבי</option>
                             <option value="ח.סבן">ח.סבן (בלעדי)</option>
+                            <option value="RAL">RAL Classic</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-600 mb-1">מניפה / קולקציה:</label>
+                          <select
+                            value={newShadeCollection}
+                            onChange={(e) => setNewShadeCollection(e.target.value)}
+                            className="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:border-[#0B3B60]"
+                          >
+                            <option value="המניפה – טמבור">המניפה – טמבור</option>
+                            <option value="נירלט Natural Whites">נירלט Natural Whites</option>
+                            <option value="אבני ארץ – נירלט">אבני ארץ – נירלט</option>
+                            <option value="מניפת RAL">🇩🇪 מניפת RAL</option>
+                            <option value="סבן בסיס מושלם">סבן בסיס מושלם</option>
+                            <option value="קולקציית 1994">קולקציית 1994</option>
                           </select>
                         </div>
                         <div>

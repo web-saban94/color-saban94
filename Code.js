@@ -34,9 +34,10 @@ var TEXT_WHITE = "#FFFFFF";
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
   ui.createMenu("🎨 ח.סבן - ניהול גוונים והזמנות")
-    .addItem("🚀 הקם ועצב את כל הטאבים מחדש (התקנה ראשונית)", "setupAllSabanSheets")
+    .addItem("🚀 הקם ועצב את כל הטאבים מחדש (כולל מניפת RAL)", "setupAllSabanSheets")
+    .addItem("🇩🇪 הקם / סנכרן טאב ייעודי 'מניפת RAL'", "seedRalFandeckSheet")
     .addItem("💉 הזרק משחות גוונים ממוחשבות לכל המניפה", "injectTintPastesToCatalog")
-    .addItem("🎨 הוסף גווני דוגמה למניפה (טמבור, נירלט, יעקבי)", "seedColorCatalog")
+    .addItem("🎨 הוסף גווני דוגמה למניפה (טמבור, נירלט, יעקבי, RAL)", "seedColorCatalog")
     .addItem("📊 רענן עיצוב ורוחב עמודות לכל הטאבים", "formatAllSheets")
     .addSeparator()
     .addItem("ℹ️ הנחיות חיבור Webhook לאפליקציה", "showWebhookInstructions")
@@ -44,27 +45,29 @@ function onOpen() {
 }
 
 /**
- * פונקציה ראשית: יוצרת ומעצבת את כל 6 הטאבים במבנה UX/UI מקצועי מלא בעברית
+ * פונקציה ראשית: יוצרת ומעצבת את כל 7 הטאבים במבנה UX/UI מקצועי מלא בעברית
  */
 function setupAllSabanSheets() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   
-  // 1. יצירת הטאבים
+  // 1. יצירת הטאבים כולל טאב מניפת RAL ייעודי
   var sheetCatalog = getOrCreateSheet(ss, "מניפת גוונים - קטלוג ארצי", 1);
-  var sheetPastes = getOrCreateSheet(ss, "נוסחאות גיוון ומשחות - מחלקת צבע", 2);
-  var sheetTalmid = getOrCreateSheet(ss, "הזמנות - סניף תלמיד 6", 3);
-  var sheetHarash = getOrCreateSheet(ss, "הזמנות - סניף החרש אסף", 4);
-  var sheetShadesLog = getOrCreateSheet(ss, "גוונים שנבחרו בקנבס", 5);
-  var sheetBaskets = getOrCreateSheet(ss, "סלים מומלצים - נועה Ai", 6);
+  var sheetRal = getOrCreateSheet(ss, "מניפת RAL", 2);
+  var sheetPastes = getOrCreateSheet(ss, "נוסחאות גיוון ומשחות - מחלקת צבע", 3);
+  var sheetTalmid = getOrCreateSheet(ss, "הזמנות - סניף תלמיד 6", 4);
+  var sheetHarash = getOrCreateSheet(ss, "הזמנות - סניף החרש אסף", 5);
+  var sheetShadesLog = getOrCreateSheet(ss, "גוונים שנבחרו בקנבס", 6);
+  var sheetBaskets = getOrCreateSheet(ss, "סלים מומלצים - נועה Ai", 7);
 
   // 2. הגדרת כיוון מימין לשמאל (RTL) לכל הטאבים
-  var allSheets = [sheetCatalog, sheetPastes, sheetTalmid, sheetHarash, sheetShadesLog, sheetBaskets];
+  var allSheets = [sheetCatalog, sheetRal, sheetPastes, sheetTalmid, sheetHarash, sheetShadesLog, sheetBaskets];
   allSheets.forEach(function(s) {
     s.setRightToLeft(true);
   });
 
   // 3. בניית כותרות ועיצוב לכל טאב
   buildCatalogSheet(sheetCatalog);
+  buildRalSheet(sheetRal);
   buildTintPastesSheet(sheetPastes);
   buildBranchOrdersSheet(sheetTalmid, "סניף תלמיד 6 (סניף הדגל ומחלקת גוונים ממוחשבת)");
   buildBranchOrdersSheet(sheetHarash, "סניף החרש אסף (סניף קבלנים וחומרי גמר ושיקום)");
@@ -73,10 +76,11 @@ function setupAllSabanSheets() {
 
   // 4. הזנת קטלוג גוונים ומשחות עשיר התחלתי
   seedColorCatalog();
+  seedRalFandeckSheet();
 
   SpreadsheetApp.getUi().alert(
     "ההתקנה הושלמה בהצלחה!\n\n" +
-    "כל 6 הטאבים הוקמו, עוצבו ומוכנים לקליטת משחות גוונים, הזמנות וסנכרון חי מול אפליקציית נועה.\n" +
+    "כל 7 הטאבים (כולל טאב 'מניפת RAL') הוקמו, עוצבו ומוכנים לקליטת משחות גוונים, הזמנות וסנכרון חי מול אפליקציית נועה.\n" +
     "כעת לחץ על 'Deploy -> New deployment -> Web app' לקבלת קישור Webhook."
   );
 }
@@ -134,6 +138,279 @@ function buildCatalogSheet(sheet) {
 
   // הקפאת שורות כותרת
   sheet.setFrozenRows(2);
+}
+
+/**
+ * בניית טאב 2: מניפת RAL (מניפה אירופית תקנית לתעשייה, אדריכלות, מתכת ופרופילים)
+ */
+function buildRalSheet(sheet) {
+  sheet.clear();
+  
+  sheet.getRange("A1:N1").merge();
+  sheet.getRange("A1").setValue("🇩🇪 ח.סבן חומרי בניין (1994) בע״מ – מניפת RAL קלאסיק ומפרט גיוון ממוחשב");
+  sheet.getRange("A1").setBackground("#1E293B").setFontColor(TEXT_WHITE).setFontSize(14).setFontWeight("bold").setHorizontalAlignment("center");
+  sheet.setRowHeight(1, 40);
+
+  var headers = [
+    "דוגמית צבע",
+    "קוד גוון RAL",
+    "שם הגוון (עברית / English)",
+    "תקן / יצרן",
+    "קולקציה / מניפה",
+    "קוד HEX",
+    "משפחת צבע",
+    "סוג משטח מומלץ",
+    "גימור מומלץ",
+    "עמוד במניפה",
+    "בסיס גיוון (Base)",
+    "נוסחת הזרקת משחות (מ״ל לליטר)",
+    "סה״כ משחה (מ״ל)",
+    "הוראות ערבול ושימוש"
+  ];
+
+  sheet.getRange(2, 1, 1, headers.length).setValues([headers]);
+  sheet.getRange(2, 1, 1, headers.length)
+       .setBackground("#B45309")
+       .setFontColor(TEXT_WHITE)
+       .setFontWeight("bold")
+       .setFontSize(11)
+       .setHorizontalAlignment("center")
+       .setVerticalAlignment("middle");
+  sheet.setRowHeight(2, 34);
+  sheet.setFrozenRows(2);
+}
+
+/**
+ * מאגר גווני מניפת RAL מובילים עם נוסחאות משחות ממוחשבות
+ */
+function getRalShadesData() {
+  return [
+    {
+      code: "RAL 9010",
+      name: "לבן טהור (Pure White)",
+      brand: "ח.סבן",
+      book: "מניפת RAL",
+      hex: "#F7F9F5",
+      family: "לבן ופנינה",
+      surface: "קירות פנים",
+      finish: "מט משי",
+      page: "עמ׳ RAL-9010",
+      base: "בסיס לבן (BW)",
+      pastesFormula: "Y: 0.8ml (1.3ש׳) | B: 0.2ml (0.3ש׳)",
+      totalPastesMl: 1.0,
+      shakerTime: 120,
+      machineNote: "RAL 9010 לבן טהור (Pure White) לפרופילים וקירות. ערבול 120 שניות."
+    },
+    {
+      code: "RAL 9003",
+      name: "לבן אותות (Signal White)",
+      brand: "ח.סבן",
+      book: "מניפת RAL",
+      hex: "#F4F4F4",
+      family: "לבן ופנינה",
+      surface: "תקרה וגבס",
+      finish: "מט מהודר",
+      page: "עמ׳ RAL-9003",
+      base: "בסיס לבן טהור (BW)",
+      pastesFormula: "B: 0.15ml | C: 0.08ml (שובר בוהק)",
+      totalPastesMl: 0.23,
+      shakerTime: 120,
+      machineNote: "RAL 9003 לבן אותות (Signal White). בהירות מקסימלית ועמידות UV."
+    },
+    {
+      code: "RAL 7016",
+      name: "אנתרציט פחם (Anthracite Grey)",
+      brand: "ח.סבן",
+      book: "מניפת RAL",
+      hex: "#373F47",
+      family: "אפורים מודרניים",
+      surface: "קירות פנים",
+      finish: "מט משי",
+      page: "עמ׳ RAL-7016",
+      base: "בסיס עמוק (BD)",
+      pastesFormula: "B: 28.0ml (45.5ש׳) | C: 4.5ml (7.3ש׳) | Y: 3.2ml (5.2ש׳)",
+      totalPastesMl: 35.7,
+      shakerTime: 240,
+      machineNote: "RAL 7016 אנתרציט פחם לקירות כוח, אלומיניום ושערים. ערבול 240 שניות."
+    },
+    {
+      code: "RAL 9005",
+      name: "שחור מט עמוק (Jet Black)",
+      brand: "ח.סבן",
+      book: "מניפת RAL",
+      hex: "#0A0A0A",
+      family: "אפורים מודרניים",
+      surface: "מתכת DTM",
+      finish: "מט משי",
+      page: "עמ׳ RAL-9005",
+      base: "בסיס עמוק/שקוף (BD)",
+      pastesFormula: "B: 38.0ml (61.7ש׳) | C: 2.2ml",
+      totalPastesMl: 40.2,
+      shakerTime: 300,
+      machineNote: "RAL 9005 שחור עמוק (Jet Black) מתכת וקירות. ערבול כפול 300 שניות."
+    },
+    {
+      code: "RAL 7035",
+      name: "אפור בהיר תעשייתי (Light Grey)",
+      brand: "ח.סבן",
+      book: "מניפת RAL",
+      hex: "#D7D7D7",
+      family: "אפורים מודרניים",
+      surface: "קירות פנים",
+      finish: "מט משי",
+      page: "עמ׳ RAL-7035",
+      base: "בסיס פסטל (BP)",
+      pastesFormula: "B: 3.4ml (5.5ש׳) | Y: 1.1ml | U: 0.6ml",
+      totalPastesMl: 5.1,
+      shakerTime: 180,
+      machineNote: "RAL 7035 אפור בהיר (Light Grey) לוחות וארונות חשמל ותעשייה. ערבול 180 שניות."
+    },
+    {
+      code: "RAL 7040",
+      name: "אפור חלון (Window Grey)",
+      brand: "ח.סבן",
+      book: "מניפת RAL",
+      hex: "#9DA3A6",
+      family: "אפורים מודרניים",
+      surface: "קירות פנים",
+      finish: "מט משי",
+      page: "עמ׳ RAL-7040",
+      base: "בסיס פסטל (BP)",
+      pastesFormula: "B: 8.5ml (13.8ש׳) | C: 1.4ml | Y: 0.9ml",
+      totalPastesMl: 10.8,
+      shakerTime: 180,
+      machineNote: "RAL 7040 אפור חלון (Window Grey). מתאים לקירות בטון מודרניים ומפתחים."
+    },
+    {
+      code: "RAL 1013",
+      name: "לבן פנינה צדף (Oyster White)",
+      brand: "ח.סבן",
+      book: "מניפת RAL",
+      hex: "#E9E5CE",
+      family: "לבן ופנינה",
+      surface: "קירות פנים",
+      finish: "מט משי",
+      page: "עמ׳ RAL-1013",
+      base: "בסיס לבן (BW)",
+      pastesFormula: "Y: 3.5ml (5.7ש׳) | U: 1.2ml | R: 0.4ml",
+      totalPastesMl: 5.1,
+      shakerTime: 180,
+      machineNote: "RAL 1013 לבן פנינה (Oyster White) קלאסי ועדין. ערבול 180 שניות."
+    },
+    {
+      code: "RAL 5002",
+      name: "כחול אולטראמרין (Ultramarine Blue)",
+      brand: "ח.סבן",
+      book: "מניפת RAL",
+      hex: "#20214F",
+      family: "כחול Saban",
+      surface: "מתכת DTM",
+      finish: "מבריק",
+      page: "עמ׳ RAL-5002",
+      base: "בסיס עמוק/שקוף (BD)",
+      pastesFormula: "C: 24.0ml (39.0ש׳) | M: 4.8ml | B: 3.5ml",
+      totalPastesMl: 32.3,
+      shakerTime: 240,
+      machineNote: "RAL 5002 כחול אולטראמרין (Ultramarine Blue). גוון עשיר לתעשייה ועיצוב. ערבול 240 שניות."
+    },
+    {
+      code: "RAL 6005",
+      name: "ירוק טחב שערים (Moss Green)",
+      brand: "ח.סבן",
+      book: "מניפת RAL",
+      hex: "#2F4538",
+      family: "מרווה וטבע",
+      surface: "מתכת DTM",
+      finish: "חצי מבריק",
+      page: "עמ׳ RAL-6005",
+      base: "בסיס עמוק (BD)",
+      pastesFormula: "G: 19.5ml (31.7ש׳) | B: 12.0ml | Y: 4.2ml",
+      totalPastesMl: 35.7,
+      shakerTime: 240,
+      machineNote: "RAL 6005 ירוק אזמרגד/טחב (Moss Green) שערים, גדרות ומתכת. ערבול 240 שניות."
+    },
+    {
+      code: "RAL 3020",
+      name: "אדום תנועה (Traffic Red)",
+      brand: "ח.סבן",
+      book: "מניפת RAL",
+      hex: "#CC0605",
+      family: "מתכת מונע חלודה",
+      surface: "מתכת DTM",
+      finish: "מבריק",
+      page: "עמ׳ RAL-3020",
+      base: "בסיס עמוק (BD)",
+      pastesFormula: "R: 22.0ml | M: 11.0ml | Y: 3.5ml",
+      totalPastesMl: 36.5,
+      shakerTime: 240,
+      machineNote: "RAL 3020 אדום עז (Traffic Red) שילוט ובטיחות. ערבול 240 שניות."
+    },
+    {
+      code: "RAL 8017",
+      name: "חום שוקולד (Chocolate Brown)",
+      brand: "ח.סבן",
+      book: "מניפת RAL",
+      hex: "#45322E",
+      family: "עץ טבעי ולכות",
+      surface: "מתכת DTM",
+      finish: "מט משי",
+      page: "עמ׳ RAL-8017",
+      base: "בסיס עמוק (BD)",
+      pastesFormula: "B: 18.0ml | U: 12.0ml | R: 6.0ml",
+      totalPastesMl: 36.0,
+      shakerTime: 240,
+      machineNote: "RAL 8017 חום שוקולד (Chocolate Brown) פרגולות ופתחים. ערבול 240 שניות."
+    }
+  ];
+}
+
+/**
+ * הזנת נתוני גווני RAL לטאב 'מניפת RAL' הייעודי
+ */
+function seedRalFandeckSheet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName("מניפת RAL");
+  if (!sheet) {
+    sheet = getOrCreateSheet(ss, "מניפת RAL", 2);
+    sheet.setRightToLeft(true);
+    buildRalSheet(sheet);
+  }
+
+  var colors = getRalShadesData();
+  var lastRow = sheet.getLastRow();
+  if (lastRow >= 3) {
+    sheet.getRange(3, 1, lastRow - 2, 14).clearContent().clearFormat();
+  }
+
+  for (var i = 0; i < colors.length; i++) {
+    var row = i + 3;
+    var c = colors[i];
+    
+    sheet.getRange(row, 1).setValue("■").setBackground(c.hex).setFontColor(c.hex).setHorizontalAlignment("center");
+    sheet.getRange(row, 2).setValue(c.code).setFontWeight("bold").setHorizontalAlignment("center");
+    sheet.getRange(row, 3).setValue(c.name);
+    sheet.getRange(row, 4).setValue(c.brand).setHorizontalAlignment("center");
+    sheet.getRange(row, 5).setValue(c.book);
+    sheet.getRange(row, 6).setValue(c.hex).setFontFamily("monospace").setHorizontalAlignment("center");
+    sheet.getRange(row, 7).setValue(c.family).setHorizontalAlignment("center");
+    sheet.getRange(row, 8).setValue(c.surface).setHorizontalAlignment("center");
+    sheet.getRange(row, 9).setValue(c.finish).setHorizontalAlignment("center");
+    sheet.getRange(row, 10).setValue(c.page).setHorizontalAlignment("center");
+    sheet.getRange(row, 11).setValue(c.base).setHorizontalAlignment("center").setFontWeight("bold");
+    sheet.getRange(row, 12).setValue(c.pastesFormula).setFontFamily("monospace");
+    sheet.getRange(row, 13).setValue(c.totalPastesMl).setHorizontalAlignment("center");
+    sheet.getRange(row, 14).setValue(c.machineNote);
+
+    if (i % 2 === 1) {
+      sheet.getRange(row, 2, 1, 13).setBackground(SABAN_BG_LIGHT);
+    }
+  }
+
+  for (var col = 1; col <= 14; col++) {
+    sheet.autoResizeColumn(col);
+  }
+  sheet.setColumnWidth(1, 60);
+  sheet.setColumnWidth(12, 280);
 }
 
 /**
@@ -877,55 +1154,86 @@ function insertOrderToBranchSheet(ss, order) {
  */
 function doGet(e) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName("מניפת גוונים - קטלוג ארצי");
-  
-  if (!sheet) {
-    return ContentService.createTextOutput(JSON.stringify({ error: "הקטלוג טרם הוקם" })).setMimeType(ContentService.MimeType.JSON);
-  }
+  var requestedTab = (e && e.parameter && (e.parameter.tab || e.parameter.sheet || e.parameter.fandeck)) ? String(e.parameter.tab || e.parameter.sheet || e.parameter.fandeck).trim() : null;
 
-  var data = sheet.getDataRange().getValues();
-  var shades = [];
-
-  // שורות נתונים מתחילות משורה 3
-  for (var i = 2; i < data.length; i++) {
-    var r = data[i];
-    if (r[1] !== "" && r[1] !== null && r[1] !== undefined) {
-      var rawCode = String(r[1]).trim();
-      if (/^\d{3}$/.test(rawCode)) {
-        rawCode = "0" + rawCode;
-      } else if (/^\d{1}$/.test(rawCode)) {
-        rawCode = "000" + rawCode;
-      }
-      var hexCode = String(r[5] || "#FFFFFF").trim();
-      if (hexCode.indexOf("#") !== 0) {
-        hexCode = "#" + hexCode;
-      }
-
-      var baseValue = String(r[10] || "").trim();
-      var formulaValue = String(r[11] || "").trim();
-      var totalMlValue = parseFloat(r[12]) || 0;
-      var noteValue = String(r[13] || "").trim();
-
-      shades.push({
-        code: rawCode,
-        name: String(r[2] || rawCode).trim(),
-        manufacturer: String(r[3] || "טמבור").trim(),
-        collectionName: String(r[4] || "המניפה").trim(),
-        hex: hexCode,
-        family: String(r[6] || "לבן ופנינה").trim(),
-        surfaceType: String(r[7] || "קירות פנים").trim(),
-        finishType: String(r[8] || "מט משי").trim(),
-        fandeckPage: String(r[9] || "").trim(),
-        base: baseValue || (hexCode === "#0B3B60" ? "בסיס עמוק/שקוף (BD)" : "בסיס לבן (BW)"),
-        pastesFormula: formulaValue,
-        totalPastesMl: totalMlValue,
-        machineNote: noteValue
-      });
+  var sheetsToRead = [];
+  if (requestedTab) {
+    var specificSheet = ss.getSheetByName(requestedTab);
+    if (specificSheet) {
+      sheetsToRead.push(specificSheet);
     }
   }
 
+  // If no specific sheet or not found, read main catalog and RAL fandeck sheet
+  if (sheetsToRead.length === 0) {
+    var mainCatalog = ss.getSheetByName("מניפת גוונים - קטלוג ארצי");
+    if (mainCatalog) sheetsToRead.push(mainCatalog);
+    var ralSheet = ss.getSheetByName("מניפת RAL");
+    if (ralSheet) sheetsToRead.push(ralSheet);
+  }
+  
+  if (sheetsToRead.length === 0) {
+    return ContentService.createTextOutput(JSON.stringify({ error: "הקטלוג טרם הוקם" })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  var shades = [];
+  var seenCodes = {};
+
+  sheetsToRead.forEach(function(sheet) {
+    var data = sheet.getDataRange().getValues();
+    var isRalTab = (sheet.getName() === "מניפת RAL");
+
+    // שורות נתונים מתחילות משורה 3
+    for (var i = 2; i < data.length; i++) {
+      var r = data[i];
+      if (r[1] !== "" && r[1] !== null && r[1] !== undefined) {
+        var rawCode = String(r[1]).trim();
+        if (/^\d{3}$/.test(rawCode)) {
+          rawCode = "0" + rawCode;
+        } else if (/^\d{1}$/.test(rawCode)) {
+          rawCode = "000" + rawCode;
+        }
+
+        var codeKey = rawCode.toUpperCase();
+        if (seenCodes[codeKey]) continue;
+        seenCodes[codeKey] = true;
+
+        var hexCode = String(r[5] || "#FFFFFF").trim();
+        if (hexCode.indexOf("#") !== 0) {
+          hexCode = "#" + hexCode;
+        }
+
+        var baseValue = String(r[10] || "").trim();
+        var formulaValue = String(r[11] || "").trim();
+        var totalMlValue = parseFloat(r[12]) || 0;
+        var noteValue = String(r[13] || "").trim();
+
+        shades.push({
+          code: rawCode,
+          name: String(r[2] || rawCode).trim(),
+          manufacturer: String(r[3] || (isRalTab ? "ח.סבן" : "טמבור")).trim(),
+          collectionName: String(r[4] || (isRalTab ? "מניפת RAL" : "המניפה")).trim(),
+          hex: hexCode,
+          family: String(r[6] || "לבן ופנינה").trim(),
+          surfaceType: String(r[7] || "קירות פנים").trim(),
+          finishType: String(r[8] || "מט משי").trim(),
+          fandeckPage: String(r[9] || "").trim(),
+          base: baseValue || (hexCode === "#0B3B60" ? "בסיס עמוק/שקוף (BD)" : "בסיס לבן (BW)"),
+          pastesFormula: formulaValue,
+          totalPastesMl: totalMlValue,
+          machineNote: noteValue
+        });
+      }
+    }
+  });
+
   return ContentService
-    .createTextOutput(JSON.stringify({ status: "success", count: shades.length, shades: shades }))
+    .createTextOutput(JSON.stringify({ 
+      status: "success", 
+      count: shades.length, 
+      shades: shades,
+      fandeckTabs: ["מניפת גוונים - קטלוג ארצי", "מניפת RAL"]
+    }))
     .setMimeType(ContentService.MimeType.JSON);
 }
 

@@ -88,19 +88,29 @@ export default function App() {
       const res = await fetch(`/api/sheets/shades?force=${force}`);
       const data = await res.json();
       if (data && Array.isArray(data.shades) && data.shades.length > 0) {
-        setShades(data.shades);
+        // Merge with local rich fandecks (including 'מניפת RAL') to guarantee complete catalogs
+        const mergedMap = new Map<string, Shade>();
+        SHADES.forEach((s) => mergedMap.set(s.code.toUpperCase().trim(), s));
+        data.shades.forEach((s: Shade) => {
+          const key = s.code.toUpperCase().trim();
+          const existing = mergedMap.get(key);
+          mergedMap.set(key, { ...existing, ...s });
+        });
+        const combined = Array.from(mergedMap.values());
+
+        setShades(combined);
         setShadesSource(data.source || 'google_sheets_live');
         const nowTime = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
         setLastShadesSyncTime(nowTime);
 
         // Keep current selected shade in sync
         setSelectedShade((prev) => {
-          const match = data.shades.find((s: Shade) => s.code === prev.code || s.id === prev.id);
-          return match || data.shades[0];
+          const match = combined.find((s: Shade) => s.code === prev.code || s.id === prev.id);
+          return match || combined[0];
         });
 
         if (force) {
-          showToast(`🎨 סונכרנו ${data.shades.length} גוונים מ-Google Sheets בזמן אמת!`);
+          showToast(`🎨 סונכרנו ${combined.length} גוונים (כולל מניפת RAL) בזמן אמת!`);
           soundService.playChime('notification');
         }
       }

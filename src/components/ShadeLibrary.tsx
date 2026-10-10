@@ -53,8 +53,20 @@ export const ShadeLibrary: React.FC<ShadeLibraryProps> = ({
   const [selectedFamily, setSelectedFamily] = useState<string>('הכל');
   const [selectedManufacturer, setSelectedManufacturer] = useState<string>('הכל');
   const [selectedSurface, setSelectedSurface] = useState<string>('הכל');
+  const [selectedCollection, setSelectedCollection] = useState<string>('הכל');
   const [addedShadeId, setAddedShadeId] = useState<string | null>(null);
   const [activeDispenserShade, setActiveDispenserShade] = useState<Shade | null>(null);
+
+  // Dynamically extract fan decks / collections
+  const collections = useMemo(() => {
+    const list = Array.from(new Set(shades.map((s) => s.collectionName).filter(Boolean))) as string[];
+    // Ensure 'מניפת RAL' is prominently present
+    const cleanList = list.filter((c) => c !== 'הכל');
+    if (!cleanList.includes('מניפת RAL')) {
+      cleanList.push('מניפת RAL');
+    }
+    return ['הכל', ...cleanList];
+  }, [shades]);
 
   // Dynamically extract manufacturers and families from shades loaded from Google Sheets
   const manufacturers = useMemo(() => {
@@ -81,13 +93,19 @@ export const ShadeLibrary: React.FC<ShadeLibraryProps> = ({
         s.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (s.collectionName && s.collectionName.toLowerCase().includes(searchQuery.toLowerCase()));
 
+      const matchCollection =
+        selectedCollection === 'הכל' ||
+        (selectedCollection === 'מניפת RAL'
+          ? (s.collectionName?.includes('RAL') || s.code.toUpperCase().includes('RAL'))
+          : s.collectionName === selectedCollection);
+
       const matchFamily = selectedFamily === 'הכל' || s.family === selectedFamily;
       const matchManufacturer = selectedManufacturer === 'הכל' || s.manufacturer === selectedManufacturer;
       const matchSurface = selectedSurface === 'הכל' || s.surfaceType === selectedSurface;
 
-      return matchSearch && matchFamily && matchManufacturer && matchSurface;
+      return matchSearch && matchCollection && matchFamily && matchManufacturer && matchSurface;
     });
-  }, [shades, searchQuery, selectedFamily, selectedManufacturer, selectedSurface]);
+  }, [shades, searchQuery, selectedCollection, selectedFamily, selectedManufacturer, selectedSurface]);
 
   const handleQuickAdd = (shade: Shade) => {
     onAddToCart(wallPaintProduct, shade);
@@ -113,7 +131,7 @@ export const ShadeLibrary: React.FC<ShadeLibraryProps> = ({
               </span>
             </div>
             <p className="text-xs text-sky-100/90 mt-0.5 flex flex-wrap items-center gap-2">
-              <span>{shades.length} גוונים פעילים במניפה (טמבור, נירלט, יעקבי, סבן)</span>
+              <span>{shades.length} גוונים פעילים (טמבור, נירלט, יעקבי, סבן ומניפת RAL)</span>
               {lastShadesSyncTime && (
                 <>
                   <span>•</span>
@@ -203,6 +221,41 @@ export const ShadeLibrary: React.FC<ShadeLibraryProps> = ({
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Fan Decks / Collections Filter Bar (including מניפת RAL) */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1 border-t border-slate-100">
+          <span className="text-xs text-slate-500 font-semibold whitespace-nowrap flex items-center gap-1">
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+            <span>מניפת צבע:</span>
+          </span>
+          {collections.map((col) => {
+            const isRal = col === 'מניפת RAL';
+            const isSelected = selectedCollection === col;
+            return (
+              <button
+                key={col}
+                onClick={() => { setSelectedCollection(col); soundService.playChime('tap'); }}
+                className={`px-3 py-1 text-xs font-semibold rounded-xl whitespace-nowrap transition flex items-center gap-1.5 ${
+                  isSelected
+                    ? isRal
+                      ? 'bg-amber-600 text-white shadow-sm ring-2 ring-amber-300'
+                      : 'bg-[#0B3B60] text-white shadow-xs'
+                    : isRal
+                      ? 'bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 font-bold'
+                      : 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100'
+                }`}
+              >
+                {isRal && <span className="w-2 h-2 rounded-full bg-amber-400" />}
+                <span>{col}</span>
+                {isRal && (
+                  <span className="text-[10px] bg-amber-900/20 text-current px-1.5 py-0.2 rounded-full">
+                    חדש
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         {/* Family Horizontal Scroll */}
