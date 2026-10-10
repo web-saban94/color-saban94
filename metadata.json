@@ -1,0 +1,6 @@
+{
+  "name": "נועה – בחירת גוון וצבע | ח.סבן חומרי בניין",
+  "description": "מודול צבע וגוונים של ח.סבן חומרי בניין (1994) בע״מ: קנבס להמחשת חלל, בורר גוונים בזמן אמת, ייעוץ Ai מקצועי עם נועה, ניתוח תמונות קיר וסנכרון מלא ל-Google Sheets.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

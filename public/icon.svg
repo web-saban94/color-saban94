@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" rx="104" fill="#0B3B60"/>
+  <!-- Isometric architectural skyline inspired by H. Saban logo -->
+  <g transform="translate(136, 110) scale(0.9)">
+    <!-- Central Tower -->
+    <path d="M120 40 L190 75 L190 220 L120 185 Z" fill="#2563EB" />
+    <path d="M120 40 L50 75 L50 220 L120 185 Z" fill="#1D4ED8" />
+    <path d="M120 40 L190 75 L120 110 L50 75 Z" fill="#60A5FA" />
+
+    <!-- Left Building -->
+    <path d="M40 120 L90 145 L90 240 L40 215 Z" fill="#1E40AF" />
+    <path d="M40 120 L-10 145 L-10 240 L40 215 Z" fill="#1E3A8A" />
+    <path d="M40 120 L90 145 L40 170 L-10 145 Z" fill="#93C5FD" />
+
+    <!-- Right Tower -->
+    <path d="M210 100 L260 125 L260 250 L210 225 Z" fill="#3B82F6" />
+    <path d="M210 100 L160 125 L160 250 L210 225 Z" fill="#1D4ED8" />
+    <path d="M210 100 L260 125 L210 150 L160 125 Z" fill="#BFDBFE" />
+
+    <!-- Paint Roller Accent Overlay -->
+    <circle cx="120" cy="180" r="32" fill="#0284C7" stroke="#FFFFFF" stroke-width="6" />
+    <path d="M110 175 L118 190 L134 168" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="256" y="420" font-family="'Assistant', 'Heebo', sans-serif" font-size="44" font-weight="800" fill="#FFFFFF" text-anchor="middle" letter-spacing="2">ח.סבן</text>
+  <text x="256" y="460" font-family="'Assistant', 'Heebo', sans-serif" font-size="22" font-weight="600" fill="#93C5FD" text-anchor="middle">נועה · צבע וגוונים</text>
+</svg>
