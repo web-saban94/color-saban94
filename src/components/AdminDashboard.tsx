@@ -131,29 +131,98 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   const sampleAppsScriptCode = `/**
- * Google Apps Script Webhook ל-Google Sheets של ח.סבן (1994) בע״מ
- * 1. פתחו גיליון Google Sheets חדש בשם "ח.סבן - מודול נועה גוונים"
- * 2. לחצו Extensions -> Apps Script
- * 3. הדביקו קוד זה ושמרו
- * 4. לחצו Deploy -> New deployment -> Web app -> Anyone -> Deploy
- * 5. העתיקו את ה-URL והדביקו בתיבת ה-Webhook במערכת הניהול
+ * ח.סבן חומרי בניין (1994) בע״מ – מודול נועה צבע וגוונים
+ * סקריפט Google Apps Script מלא (Code.js)
  */
+function onOpen() {
+  SpreadsheetApp.getUi().createMenu("🎨 ח.סבן - ניהול גוונים והזמנות")
+    .addItem("🚀 הקם ועצב את כל הטאבים מחדש", "setupAllSabanSheets")
+    .addItem("🎨 הוסף גווני דוגמה למניפה (טמבור, נירלט, יעקבי)", "seedColorCatalog")
+    .addToUi();
+}
+
+function setupAllSabanSheets() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheetCatalog = getOrCreateSheet(ss, "מניפת גוונים - קטלוג ארצי", 1);
+  var sheetTalmid = getOrCreateSheet(ss, "הזמנות - סניף תלמיד 6", 2);
+  var sheetHarash = getOrCreateSheet(ss, "הזמנות - סניף החרש אסף", 3);
+  var sheetShades = getOrCreateSheet(ss, "גוונים שנבחרו בקנבס", 4);
+  var sheetBaskets = getOrCreateSheet(ss, "סלים מומלצים - נועה Ai", 5);
+
+  [sheetCatalog, sheetTalmid, sheetHarash, sheetShades, sheetBaskets].forEach(function(s) {
+    s.setRightToLeft(true);
+  });
+
+  buildCatalog(sheetCatalog);
+  buildOrders(sheetTalmid, "סניף תלמיד 6");
+  buildOrders(sheetHarash, "סניף החרש אסף");
+  seedColorCatalog();
+  SpreadsheetApp.getUi().alert("כל הטאבים הוקמו ועוצבו בהצלחה!");
+}
+
+function getOrCreateSheet(ss, name, idx) {
+  return ss.getSheetByName(name) || ss.insertSheet(name, idx - 1);
+}
+
+function buildCatalog(sheet) {
+  sheet.clear();
+  sheet.getRange("A1:J1").merge().setValue("🎨 ח.סבן (1994) בע״מ – קטלוג מניפות ארצי (טמבור, נירלט, יעקבי)")
+    .setBackground("#0B3B60").setFontColor("#FFFFFF").setFontWeight("bold").setHorizontalAlignment("center");
+  sheet.getRange(2, 1, 1, 10).setValues([["דוגמית", "קוד גוון", "שם הגוון", "חברה/יצרן", "מניפה", "קוד HEX", "משפחה", "משטח", "גימור", "עמוד"]]);
+  sheet.getRange(2, 1, 1, 10).setBackground("#0284C7").setFontColor("#FFFFFF").setFontWeight("bold").setHorizontalAlignment("center");
+  sheet.setFrozenRows(2);
+}
+
+function buildOrders(sheet, branch) {
+  sheet.clear();
+  sheet.getRange("A1:K1").merge().setValue("🏢 מערכת הזמנות סניף – " + branch)
+    .setBackground("#0B3B60").setFontColor("#FFFFFF").setFontWeight("bold").setHorizontalAlignment("center");
+  sheet.getRange(2, 1, 1, 11).setValues([["מספר הזמנה", "תאריך", "שם לקוח", "טלפון", "גוון מבוקש", "סל מוצרים", "סה״כ ₪", "סטטוס", "איסוף משוער", "הערות", "סונכרן מנועה"]]);
+  sheet.getRange(2, 1, 1, 11).setBackground("#0284C7").setFontColor("#FFFFFF").setFontWeight("bold").setHorizontalAlignment("center");
+  sheet.setFrozenRows(2);
+  var rule = SpreadsheetApp.newDataValidation().requireValueInList(["התקבלה", "בטיפול בסניף", "מוכנה לאיסוף", "נמסרה ללקוח"], true).build();
+  sheet.getRange("H3:H1000").setDataValidation(rule);
+}
+
+function seedColorCatalog() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("מניפת גוונים - קטלוג ארצי");
+  if (!sheet) return;
+  var colors = [
+    { code: "WW2202", name: "לראות צלול", brand: "טמבור", book: "המניפה 2026", hex: "#D7DDD4", fam: "לבן ופנינה", s: "קירות פנים", f: "מט משי", p: "עמ׳ 42" },
+    { code: "IS 0155", name: "טרוורטין מדברי", brand: "נירלט", book: "אבני ארץ", hex: "#D9CDBF", fam: "אבן וחול", s: "קירות פנים", f: "מט משי", p: "עמ׳ 24" },
+    { code: "0543", name: "בטון מעודן", brand: "טמבור", book: "המניפה", hex: "#C8CCCB", fam: "אפורים", s: "קירות פנים", f: "מט מהודר", p: "עמ׳ 84" },
+    { code: "SB-0B3B", name: "כחול ח.סבן מורשת", brand: "ח.סבן", book: "קולקציית 1994", hex: "#0B3B60", fam: "כחול Saban", s: "קירות פנים", f: "מט משי", p: "עמ׳ 3" },
+    { code: "IS 0412", name: "אקליפטוס גלילי", brand: "נירלט", book: "צבעי הטבע", hex: "#A7B7A3", fam: "מרווה וטבע", s: "קירות פנים", f: "מט משי", p: "עמ׳ 67" }
+  ];
+  for (var i = 0; i < colors.length; i++) {
+    var row = i + 3;
+    var c = colors[i];
+    sheet.getRange(row, 1).setValue("■").setBackground(c.hex).setFontColor(c.hex).setHorizontalAlignment("center");
+    sheet.getRange(row, 2).setValue(c.code).setFontWeight("bold").setHorizontalAlignment("center");
+    sheet.getRange(row, 3).setValue(c.name);
+    sheet.getRange(row, 4).setValue(c.brand).setHorizontalAlignment("center");
+    sheet.getRange(row, 5).setValue(c.book);
+    sheet.getRange(row, 6).setValue(c.hex).setFontFamily("monospace").setHorizontalAlignment("center");
+    sheet.getRange(row, 7).setValue(c.fam).setHorizontalAlignment("center");
+    sheet.getRange(row, 8).setValue(c.s).setHorizontalAlignment("center");
+    sheet.getRange(row, 9).setValue(c.f).setHorizontalAlignment("center");
+    sheet.getRange(row, 10).setValue(c.p).setHorizontalAlignment("center");
+  }
+}
+
 function doPost(e) {
   var data = JSON.parse(e.postData.contents);
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  
-  // 1. הזמנות
-  var sheetOrders = ss.getSheetByName("הזמנות") || ss.insertSheet("הזמנות");
-  if (sheetOrders.getLastRow() === 0) {
-    sheetOrders.appendRow(["מספר הזמנה", "שם לקוח", "טלפון", "סניף", "סטטוס", "סכום", "תאריך"]);
-  }
   if (data.orders) {
     data.orders.forEach(function(o) {
-      sheetOrders.appendRow([o.orderNumber, o.customerName, o.customerPhone, o.branch, o.status, o.totalAmount, o.createdAt]);
+      var sheetName = (o.branch && o.branch.indexOf("החרש") > -1) ? "הזמנות - סניף החרש אסף" : "הזמנות - סניף תלמיד 6";
+      var s = ss.getSheetByName(sheetName);
+      if (s) {
+        s.appendRow([o.orderNumber, o.createdAt, o.customerName, o.customerPhone, o.shadeSummary, (o.items||[]).map(function(i){return (i.product?i.product.name:i.name)+" x"+i.quantity;}).join(", "), o.totalAmount, o.status, "תוך 30 דקות", o.notes, "כן"]);
+      }
     });
   }
-  
-  return ContentService.createTextOutput(JSON.stringify({result: "success"})).setMimeType(ContentService.MimeType.JSON);
+  return ContentService.createTextOutput(JSON.stringify({status:"success"})).setMimeType(ContentService.MimeType.JSON);
 }`;
 
   if (!isOpen) return null;
@@ -465,18 +534,30 @@ function doPost(e) {
                   {/* Apps Script Template */}
                   <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2 text-xs">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-800">קוד Google Apps Script מוכן להעתקה לגיליון החברה:</span>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(sampleAppsScriptCode);
-                          setCopiedScript(true);
-                          setTimeout(() => setCopiedScript(false), 2000);
-                        }}
-                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 font-semibold text-[11px] hover:bg-slate-100"
-                      >
-                        {copiedScript ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                        <span>{copiedScript ? 'הועתק!' : 'העתק קוד'}</span>
-                      </button>
+                      <span className="font-bold text-slate-800">קוד Google Apps Script מלא (Code.js) להקמת כל הטאבים:</span>
+                      <div className="flex items-center gap-2">
+                        <a
+                          href="/Code.js"
+                          download="Code.js"
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#0B3B60] text-white font-semibold text-[11px] hover:bg-[#072942] transition shadow-xs"
+                          title="הורד קובץ Code.js למחשב"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span>הורד קובץ Code.js</span>
+                        </a>
+
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(sampleAppsScriptCode);
+                            setCopiedScript(true);
+                            setTimeout(() => setCopiedScript(false), 2000);
+                          }}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 font-semibold text-[11px] hover:bg-slate-100 transition shadow-xs"
+                        >
+                          {copiedScript ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                          <span>{copiedScript ? 'הועתק!' : 'העתק קוד'}</span>
+                        </button>
+                      </div>
                     </div>
                     <pre className="p-3 bg-slate-900 text-slate-200 rounded-xl text-[10px] font-mono overflow-x-auto max-h-36 leading-normal dir-ltr text-left">
                       {sampleAppsScriptCode}
