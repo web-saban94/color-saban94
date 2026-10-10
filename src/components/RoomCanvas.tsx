@@ -54,6 +54,11 @@ export const RoomCanvas: React.FC<RoomCanvasProps> = ({
       src: '/assets/images/room_bedroom_minimal_1791593495013.jpg',
     },
     {
+      id: 'bedroom',
+      name: '  חלל מטחבח סגנון כפרי',
+      src: '/assets/images/room_bedroom_minimal_17913495013.jpg',
+    },
+    {
       id: 'inspection',
       name: 'בדיקת קיר וסדקים (Ai)',
       src: '/assets/images/room_wall_damage_1791593506091.jpg',
