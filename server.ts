@@ -406,7 +406,7 @@ const db = {
   ],
 
   sheetsConfig: {
-    webhookUrl: 'https://script.google.com/macros/s/AKfycbxR0SPWAZooC3ompY4O9ws4GXeiY2O80JghpLR3hBB_TdNgLK5xOLfqtL8tzNvDTcBq/exec',
+    webhookUrl: 'https://script.google.com/macros/s/AKfycbwAli2SgCuXVBakW6zR2XBiDt_2Vheo5KyNe--_gK-EoC7JuHiBZIQWV_zhfTl4dLqo/exec',
     spreadsheetId: '1vVE0ZOag1WuVMtFfLjB1u0nosRQ67C-s0FerqYH_Jdc',
     spreadsheetUrl: 'https://docs.google.com/spreadsheets/d/1vVE0ZOag1WuVMtFfLjB1u0nosRQ67C-s0FerqYH_Jdc/edit',
     autoSyncEnabled: true,
