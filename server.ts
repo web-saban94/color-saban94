@@ -12,9 +12,23 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// CORS for cross-domain requests
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
+// Serve public static assets (images, manifest, icons, Code.js)
+app.use(express.static(path.resolve(__dirname, 'public')));
+app.use('/src/assets', express.static(path.resolve(__dirname, 'public/assets')));
 
 // Initialize Google GenAI client (Server-Side Only)
 const ai = new GoogleGenAI({

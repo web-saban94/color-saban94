@@ -32,7 +32,7 @@ export const WallAiScanner: React.FC<WallAiScannerProps> = ({
   onBackToCanvas,
 }) => {
   const [activeImage, setActiveImage] = useState<string>(
-    initialImage || '/src/assets/images/room_wall_damage_1791593506091.jpg'
+    initialImage || '/assets/images/room_wall_damage_1791593506091.jpg'
   );
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<WallAnalysisResult | null>(null);
@@ -43,12 +43,12 @@ export const WallAiScanner: React.FC<WallAiScannerProps> = ({
     {
       id: 'damage1',
       name: 'תמונת בדיקה: סדקים וקילופי טיח',
-      src: '/src/assets/images/room_wall_damage_1791593506091.jpg',
+      src: '/assets/images/room_wall_damage_1791593506091.jpg',
     },
     {
       id: 'living',
       name: 'קיר סלון מודרני',
-      src: '/src/assets/images/room_living_modern_1791593484427.jpg',
+      src: '/assets/images/room_living_modern_1791593484427.jpg',
     },
   ];
 

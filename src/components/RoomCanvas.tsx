@@ -46,17 +46,17 @@ export const RoomCanvas: React.FC<RoomCanvasProps> = ({
     {
       id: 'living',
       name: 'סלון מודרני סקנדינבי',
-      src: '/src/assets/images/room_living_modern_1791593484427.jpg',
+      src: '/assets/images/room_living_modern_1791593484427.jpg',
     },
     {
       id: 'bedroom',
       name: 'חדר שינה מינימליסטי',
-      src: '/src/assets/images/room_bedroom_minimal_1791593495013.jpg',
+      src: '/assets/images/room_bedroom_minimal_1791593495013.jpg',
     },
     {
       id: 'inspection',
       name: 'בדיקת קיר וסדקים (Ai)',
-      src: '/src/assets/images/room_wall_damage_1791593506091.jpg',
+      src: '/assets/images/room_wall_damage_1791593506091.jpg',
     },
   ];
 
