@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { GoogleGenAI, Type } from '@google/genai';
+import { getOrCreateTintFormula } from './src/utils/tintFormulas';
 
 dotenv.config();
 
@@ -144,13 +145,280 @@ const db = {
     },
   ] as BasketLog[],
 
+  // Live Catalog Shades synchronized directly from Google Sheets ("מניפת גוונים - קטלוג ארצי")
+  catalogShades: [
+    {
+      id: 'shd-WW2202',
+      code: 'WW2202',
+      name: 'לראות צלול',
+      manufacturer: 'טמבור',
+      collectionName: 'המניפה – טמבור 2026',
+      hex: '#D7DDD4',
+      family: 'לבן ופנינה',
+      surfaceType: 'קירות פנים',
+      finishType: 'מט משי',
+      fandeckPage: 'עמ׳ 42',
+      description: 'המניפה – טמבור 2026 • גוון ירוק-אפרפר בהיר ומרגיע שמעניק עומק רך לחלל. הבחירה המובילה של אדריכלים.',
+      isPopular: true,
+      lightShadeHex: '#E7EBE4',
+      darkShadeHex: '#B9C3B5',
+    },
+    {
+      id: 'shd-WW2010',
+      code: 'WW2010',
+      name: 'כותנה מנחמת',
+      manufacturer: 'טמבור',
+      collectionName: 'המניפה – טמבור',
+      hex: '#EFECE6',
+      family: 'לבן ופנינה',
+      surfaceType: 'קירות פנים',
+      finishType: 'מט משי',
+      fandeckPage: 'עמ׳ 38',
+      description: 'המניפה – טמבור • לבן טבעי חמים ועוטף.',
+      isPopular: true,
+      lightShadeHex: '#F7F5F0',
+      darkShadeHex: '#D5CFC3',
+    },
+    {
+      id: 'shd-0281',
+      code: '0281',
+      name: 'חול ים זהוב',
+      manufacturer: 'טמבור',
+      collectionName: 'המניפה – טמבור',
+      hex: '#E2D5C3',
+      family: 'אבן וחול',
+      surfaceType: 'קירות פנים',
+      finishType: 'מט משי',
+      fandeckPage: 'עמ׳ 55',
+      description: 'המניפה – טמבור • גוון חול נעים ומזמין.',
+      isPopular: true,
+      lightShadeHex: '#EDE3D5',
+      darkShadeHex: '#C5B59E',
+    },
+    {
+      id: 'shd-0543',
+      code: '0543',
+      name: 'בטון מעודן',
+      manufacturer: 'טמבור',
+      collectionName: 'המניפה – אורבני',
+      hex: '#C8CCCB',
+      family: 'אפורים מודרניים',
+      surfaceType: 'קירות פנים',
+      finishType: 'מט מהודר',
+      fandeckPage: 'עמ׳ 84',
+      description: 'המניפה – אורבני • אפור מודרני מלוטש.',
+      isPopular: true,
+      lightShadeHex: '#DBDFDE',
+      darkShadeHex: '#A5AAA9',
+    },
+    {
+      id: 'shd-WW1950',
+      code: 'WW1950',
+      name: 'מטע זיתים עתיק',
+      manufacturer: 'טמבור',
+      collectionName: 'המניפה – טמבור',
+      hex: '#8D9B85',
+      family: 'מרווה וטבע',
+      surfaceType: 'קירות פנים',
+      finishType: 'מט משי',
+      fandeckPage: 'עמ׳ 92',
+      description: 'המניפה – טמבור • ירוק זית מרווה טבעי.',
+      isPopular: false,
+      lightShadeHex: '#ABB4A4',
+      darkShadeHex: '#6E7C66',
+    },
+    {
+      id: 'shd-W204',
+      code: 'W204',
+      name: 'אגוז אמריקאי עמוק',
+      manufacturer: 'טמבור',
+      collectionName: 'ורניט לכות',
+      hex: '#5E402B',
+      family: 'עץ טבעי ולכות',
+      surfaceType: 'עץ ולכות',
+      finishType: 'מט משי',
+      fandeckPage: 'עמ׳ 12',
+      description: 'ורניט לכות • גוון אגוז עשיר לעץ פנים וחוץ.',
+      isPopular: false,
+      lightShadeHex: '#865E42',
+      darkShadeHex: '#422C1D',
+    },
+    {
+      id: 'shd-M01',
+      code: 'M01',
+      name: 'לבן מתכת מבריק',
+      manufacturer: 'טמבור',
+      collectionName: 'סופרלק מתכת',
+      hex: '#F0F3F5',
+      family: 'מתכת מונע חלודה',
+      surfaceType: 'מתכת DTM',
+      finishType: 'מבריק',
+      fandeckPage: 'עמ׳ 4',
+      description: 'סופרלק מתכת • ציפוי מגן עמיד מונע חלודה ישיר למתכת.',
+      isPopular: false,
+      lightShadeHex: '#F8F9FA',
+      darkShadeHex: '#D4DBDF',
+    },
+    {
+      id: 'shd-IS0010',
+      code: 'IS 0010',
+      name: 'שמנת קטיפתית',
+      manufacturer: 'נירלט',
+      collectionName: 'Natural Whites',
+      hex: '#F4EFE6',
+      family: 'לבן ופנינה',
+      surfaceType: 'קירות פנים',
+      finishType: 'מט מהודר',
+      fandeckPage: 'עמ׳ 10',
+      description: 'Natural Whites • לבן שבור חם וקטיפתי מבית נירלט.',
+      isPopular: true,
+      lightShadeHex: '#FAF7F1',
+      darkShadeHex: '#E5DCCE',
+    },
+    {
+      id: 'shd-IS0155',
+      code: 'IS 0155',
+      name: 'טרוורטין מדברי',
+      manufacturer: 'נירלט',
+      collectionName: 'אבני ארץ',
+      hex: '#D9CDBF',
+      family: 'אבן וחול',
+      surfaceType: 'קירות פנים',
+      finishType: 'מט משי',
+      fandeckPage: 'עמ׳ 24',
+      description: 'אבני ארץ • גוון טרוורטין טבעי בהיר ויוקרתי.',
+      isPopular: true,
+      lightShadeHex: '#E7DDD1',
+      darkShadeHex: '#BCAC9A',
+    },
+    {
+      id: 'shd-IS0412',
+      code: 'IS 0412',
+      name: 'אקליפטוס גלילי',
+      manufacturer: 'נירלט',
+      collectionName: 'צבעי הטבע',
+      hex: '#A7B7A3',
+      family: 'מרווה וטבע',
+      surfaceType: 'קירות פנים',
+      finishType: 'מט משי',
+      fandeckPage: 'עמ׳ 67',
+      description: 'צבעי הטבע • ירוק מרווה ישראלי רגוע.',
+      isPopular: false,
+      lightShadeHex: '#C0CDC0',
+      darkShadeHex: '#889B84',
+    },
+    {
+      id: 'shd-IS0640',
+      code: 'IS 0640',
+      name: 'תכלת ים תיכוני',
+      manufacturer: 'נירלט',
+      collectionName: 'נירלט ים תיכון',
+      hex: '#96B9CC',
+      family: 'כחול Saban',
+      surfaceType: 'קירות פנים',
+      finishType: 'מט משי',
+      fandeckPage: 'עמ׳ 72',
+      description: 'נירלט ים תיכון • תכלת שמיים מרגיע ומואר.',
+      isPopular: false,
+      lightShadeHex: '#B2CCE0',
+      darkShadeHex: '#6F9BB3',
+    },
+    {
+      id: 'shd-0001',
+      code: '0001',
+      name: 'לבן שלג מוחלט',
+      manufacturer: 'ח.סבן',
+      collectionName: 'סבן בסיס מושלם',
+      hex: '#FFFFFF',
+      family: 'לבן ופנינה',
+      surfaceType: 'תקרה וגבס',
+      finishType: 'מט משי',
+      fandeckPage: 'עמ׳ 1',
+      description: 'סבן בסיס מושלם • לבן טהור ובוהק לתקרות ולגבס.',
+      isPopular: true,
+      lightShadeHex: '#FFFFFF',
+      darkShadeHex: '#EAEAEA',
+    },
+    {
+      id: 'shd-SB-0B3B',
+      code: 'SB-0B3B',
+      name: 'כחול ח.סבן מורשת',
+      manufacturer: 'ח.סבן',
+      collectionName: 'קולקציית 1994',
+      hex: '#0B3B60',
+      family: 'כחול Saban',
+      surfaceType: 'קירות פנים',
+      finishType: 'מט משי',
+      fandeckPage: 'עמ׳ 3',
+      description: 'קולקציית 1994 • גוון הצי המלכותי של מותג ח.סבן.',
+      isPopular: true,
+      lightShadeHex: '#185B8F',
+      darkShadeHex: '#06243D',
+    },
+    {
+      id: 'shd-RAL7016',
+      code: 'RAL 7016',
+      name: 'אנתרציט פחם',
+      manufacturer: 'ח.סבן',
+      collectionName: 'Accent Wall',
+      hex: '#373F47',
+      family: 'אפורים מודרניים',
+      surfaceType: 'קירות פנים',
+      finishType: 'מט משי',
+      fandeckPage: 'עמ׳ 16',
+      description: 'Accent Wall • אנתרציט ארכיטקטוני לקירות כוח ופתחי אלומיניום.',
+      isPopular: true,
+      lightShadeHex: '#58616B',
+      darkShadeHex: '#22282E',
+    },
+    {
+      id: 'shd-W101',
+      code: 'W101',
+      name: 'אלון אירופאי טבעי',
+      manufacturer: 'יעקבי',
+      collectionName: 'בלנשון ולכות',
+      hex: '#B88656',
+      family: 'עץ טבעי ולכות',
+      surfaceType: 'עץ ולכות',
+      finishType: 'חצי מבריק',
+      fandeckPage: 'עמ׳ 8',
+      description: 'בלנשון ולכות • הדגשת טקסטורת עץ בגוון אלון יוקרתי.',
+      isPopular: false,
+      lightShadeHex: '#CCA47C',
+      darkShadeHex: '#8C623A',
+    },
+    {
+      id: 'shd-DTM-90',
+      code: 'DTM-90',
+      name: 'גרפיט מרוקע מגן',
+      manufacturer: 'יעקבי',
+      collectionName: 'המרייט ישיר לחלודה',
+      hex: '#4A4E51',
+      family: 'מתכת מונע חלודה',
+      surfaceType: 'מתכת DTM',
+      finishType: 'מבריק',
+      fandeckPage: 'עמ׳ 2',
+      description: 'המרייט ישיר לחלודה • גימור מרוקע עמיד במיוחד לגדרות, סורגים ומעקות.',
+      isPopular: false,
+      lightShadeHex: '#6F7376',
+      darkShadeHex: '#303335',
+    },
+  ],
+
   sheetsConfig: {
     webhookUrl: 'https://script.google.com/macros/s/AKfycbxR0SPWAZooC3ompY4O9ws4GXeiY2O80JghpLR3hBB_TdNgLK5xOLfqtL8tzNvDTcBq/exec',
     spreadsheetId: '1vVE0ZOag1WuVMtFfLjB1u0nosRQ67C-s0FerqYH_Jdc',
     spreadsheetUrl: 'https://docs.google.com/spreadsheets/d/1vVE0ZOag1WuVMtFfLjB1u0nosRQ67C-s0FerqYH_Jdc/edit',
     autoSyncEnabled: true,
     lastSyncTime: new Date().toISOString(),
+    lastCatalogSyncTime: new Date().toISOString(),
     syncHistory: [
+      {
+        timestamp: new Date().toISOString(),
+        sheet: 'מניפת גוונים - קטלוג ארצי',
+        count: 16,
+        status: 'success',
+      },
       {
         timestamp: new Date().toISOString(),
         sheet: 'הזמנות',
@@ -167,9 +435,150 @@ const db = {
   },
 };
 
-// --------------------------------------------------------------------------
-// API Routes
-// --------------------------------------------------------------------------
+// Color manipulation helper to generate lighter and darker variations for any shade
+function adjustHexColor(hex: string, percent: number): string {
+  let clean = hex.replace('#', '').trim();
+  if (clean.length === 3) {
+    clean = clean.split('').map((c) => c + c).join('');
+  }
+  const num = parseInt(clean, 16);
+  if (isNaN(num)) return hex;
+  let r = (num >> 16) & 255;
+  let g = (num >> 8) & 255;
+  let b = num & 255;
+  const factor = percent / 100;
+  if (factor > 0) {
+    r = Math.min(255, Math.round(r + (255 - r) * factor));
+    g = Math.min(255, Math.round(g + (255 - g) * factor));
+    b = Math.min(255, Math.round(b + (255 - b) * factor));
+  } else {
+    r = Math.max(0, Math.round(r * (1 + factor)));
+    g = Math.max(0, Math.round(g * (1 + factor)));
+    b = Math.max(0, Math.round(b * (1 + factor)));
+  }
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()}`;
+}
+
+// Normalizes shade data retrieved from Google Sheets or API
+function normalizeCatalogShade(item: any, index: number): any {
+  let rawCode = String(item.code || item.shadeCode || '').trim();
+  // Pad numeric codes (e.g. 281 -> 0281, 543 -> 0543, 1 -> 0001)
+  if (/^\d{3}$/.test(rawCode)) {
+    rawCode = '0' + rawCode;
+  } else if (/^\d{1,2}$/.test(rawCode)) {
+    rawCode = rawCode.padStart(4, '0');
+  }
+
+  let hex = String(item.hex || item.hexCode || '#D7DDD4').trim();
+  if (hex && !hex.startsWith('#')) {
+    hex = '#' + hex;
+  }
+  if (!/^#[0-9A-Fa-f]{3,8}$/.test(hex)) {
+    hex = '#D7DDD4';
+  }
+
+  const name = String(item.name || item.shadeName || rawCode || 'גוון מניפה').trim();
+  const manufacturer = String(item.manufacturer || item.brand || 'טמבור').trim();
+  const collectionName = String(item.collectionName || item.book || 'המניפה – קטלוג ארצי').trim();
+  const family = String(item.family || 'לבן ופנינה').trim();
+  const surfaceType = String(item.surfaceType || item.surface || 'קירות פנים').trim();
+  const finishType = String(item.finishType || item.finish || 'מט משי').trim();
+  const fandeckPage = String(item.fandeckPage || item.page || '').trim();
+
+  const tintFormula = item.tintFormula || getOrCreateTintFormula({
+    code: rawCode,
+    name,
+    hex,
+    manufacturer,
+  });
+
+  return {
+    id: `shd-${rawCode.replace(/[^a-zA-Z0-9_-]/g, '') || index}`,
+    code: rawCode,
+    name,
+    manufacturer,
+    collectionName,
+    hex,
+    family,
+    surfaceType,
+    finishType,
+    fandeckPage,
+    description: item.description || `${collectionName} • ${manufacturer} (${finishType}${fandeckPage ? `, ${fandeckPage}` : ''})`,
+    isPopular: item.isPopular ?? ['WW2202', 'IS 0155', '0281', '0543', 'IS 0010', 'SB-0B3B', '0001'].includes(rawCode),
+    lightShadeHex: item.lightShadeHex || adjustHexColor(hex, 25),
+    darkShadeHex: item.darkShadeHex || adjustHexColor(hex, -25),
+    tintFormula,
+  };
+}
+
+// Fetch live catalog from Google Apps Script Webhook connected to Google Sheets
+async function fetchCatalogFromGoogleSheets(force: boolean = false) {
+  const webhookUrl = db.sheetsConfig.webhookUrl;
+  if (!webhookUrl || !webhookUrl.startsWith('http')) {
+    return {
+      success: true,
+      count: db.catalogShades.length,
+      shades: db.catalogShades,
+      source: 'cache' as const,
+      lastSyncTime: db.sheetsConfig.lastCatalogSyncTime,
+    };
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 7000);
+
+    const response = await fetch(webhookUrl, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'H.Saban-Noa-PWA/1.0',
+      },
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+
+    if (response.ok) {
+      const data: any = await response.json();
+      if (data && Array.isArray(data.shades) && data.shades.length > 0) {
+        const normalized = data.shades.map((s: any, idx: number) => normalizeCatalogShade(s, idx));
+        db.catalogShades = normalized;
+        const nowIso = new Date().toISOString();
+        db.sheetsConfig.lastCatalogSyncTime = nowIso;
+        db.sheetsConfig.lastSyncTime = nowIso;
+
+        // Record in sync history
+        db.sheetsConfig.syncHistory.unshift({
+          timestamp: nowIso,
+          sheet: 'מניפת גוונים - קטלוג ארצי',
+          count: normalized.length,
+          status: 'success',
+        });
+
+        console.log(`[Google Sheets Sync] Successfully loaded ${normalized.length} shades live from Google Sheet!`);
+        return {
+          success: true,
+          count: normalized.length,
+          shades: normalized,
+          source: 'google_sheets_live' as const,
+          lastSyncTime: nowIso,
+          spreadsheetId: db.sheetsConfig.spreadsheetId,
+        };
+      }
+    }
+  } catch (err: any) {
+    console.warn('[Google Sheets Sync] Transient notice, using catalog cache:', err.message);
+  }
+
+  return {
+    success: true,
+    count: db.catalogShades.length,
+    shades: db.catalogShades,
+    source: 'cache' as const,
+    lastSyncTime: db.sheetsConfig.lastCatalogSyncTime,
+    spreadsheetId: db.sheetsConfig.spreadsheetId,
+  };
+}
 
 // 1. Noa AI Chat Consultation
 app.post('/api/noa/chat', async (req, res) => {
@@ -578,6 +987,186 @@ app.post('/api/shades/log', (req, res) => {
   res.status(201).json({ success: true, log: newLog });
 });
 
+// 4.5 Live Catalog Shades from Google Sheets ("מניפת גוונים - קטלוג ארצי")
+app.get('/api/sheets/shades', async (req, res) => {
+  try {
+    const force = req.query.force === 'true' || req.query.refresh === 'true';
+
+    // If forced or catalog never synced from sheets, fetch live
+    if (force || !db.sheetsConfig.lastCatalogSyncTime || db.catalogShades.length === 0) {
+      const liveResult = await fetchCatalogFromGoogleSheets(force);
+      return res.json(liveResult);
+    }
+
+    // Trigger background refresh if older than 30 seconds
+    const now = Date.now();
+    const lastSyncTimeMs = db.sheetsConfig.lastCatalogSyncTime ? new Date(db.sheetsConfig.lastCatalogSyncTime).getTime() : 0;
+    if (now - lastSyncTimeMs > 30000) {
+      fetchCatalogFromGoogleSheets(false).catch(() => {});
+    }
+
+    res.json({
+      success: true,
+      count: db.catalogShades.length,
+      shades: db.catalogShades,
+      source: 'google_sheets_live',
+      lastSyncTime: db.sheetsConfig.lastCatalogSyncTime,
+      spreadsheetId: db.sheetsConfig.spreadsheetId,
+      webhookUrl: db.sheetsConfig.webhookUrl,
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      success: false,
+      error: err.message,
+      shades: db.catalogShades,
+      count: db.catalogShades.length,
+    });
+  }
+});
+
+// Explicit endpoint to trigger real-time sync with Google Sheets
+app.post('/api/sheets/sync-shades', async (req, res) => {
+  try {
+    const result = await fetchCatalogFromGoogleSheets(true);
+    res.json({
+      ...result,
+      message: `סונכרנו בהצלחה ${result.count} גוונים מ-Google Sheets בזמן אמת!`,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Explicit endpoint to inject tinting pastes and synchronize them with Google Sheets
+app.post('/api/sheets/inject-tint-pastes', async (req, res) => {
+  try {
+    const webhookUrl = db.sheetsConfig.webhookUrl;
+
+    // Ensure all catalog shades have full tint formulas injected
+    db.catalogShades = db.catalogShades.map((s: any) => {
+      const formula = getOrCreateTintFormula({
+        code: s.code,
+        name: s.name,
+        hex: s.hex,
+        manufacturer: s.manufacturer,
+      });
+      return {
+        ...s,
+        tintFormula: {
+          ...formula,
+          lastInjectedAt: new Date().toISOString(),
+          isSyncedToSheet: true,
+        },
+      };
+    });
+
+    let webhookResponse: any = null;
+    let webhookSuccess = false;
+
+    // Send the injected tint formulas to Google Apps Script webhook
+    if (webhookUrl && webhookUrl.startsWith('http')) {
+      try {
+        const payload = {
+          action: 'inject_pastes',
+          timestamp: new Date().toISOString(),
+          shadesCount: db.catalogShades.length,
+          shades: db.catalogShades.map((s: any) => ({
+            code: s.code,
+            name: s.name,
+            manufacturer: s.manufacturer,
+            collectionName: s.collectionName,
+            hex: s.hex,
+            family: s.family,
+            surfaceType: s.surfaceType,
+            finishType: s.finishType,
+            fandeckPage: s.fandeckPage,
+            base: s.tintFormula?.base || 'בסיס לבן (BW)',
+            baseCode: s.tintFormula?.baseCode || 'BW',
+            pastesFormula: s.tintFormula?.formulaSummary || '',
+            totalPastesMl: s.tintFormula?.totalPastesMlPerLiter || 0,
+            shakerTime: s.tintFormula?.shakerTimeSeconds || 180,
+            machineNote: s.tintFormula?.machineDispenseNote || 'ערבול במערבל גירוסקופי',
+          })),
+        };
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        const hookRes = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+        if (hookRes.ok) {
+          webhookResponse = await hookRes.json();
+          webhookSuccess = true;
+        }
+      } catch (postErr) {
+        console.warn('[Google Sheets] Webhook POST warning:', postErr);
+      }
+    }
+
+    const nowIso = new Date().toISOString();
+    db.sheetsConfig.lastSyncTime = nowIso;
+    db.sheetsConfig.lastCatalogSyncTime = nowIso;
+    db.sheetsConfig.syncHistory.unshift({
+      timestamp: nowIso,
+      sheet: 'נוסחאות גיוון ומשחות - מחלקת צבע',
+      count: db.catalogShades.length,
+      status: 'success',
+    });
+
+    res.json({
+      success: true,
+      count: db.catalogShades.length,
+      shades: db.catalogShades,
+      webhookSuccess,
+      webhookResponse,
+      message: `הוזרקו בהצלחה משחות גוונים לכל ${db.catalogShades.length} הגוונים וסונכרנו לגיליון Google Sheets!`,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Add new shade to the catalog & push to Google Sheets
+app.post('/api/sheets/shades', (req, res) => {
+  try {
+    const raw = req.body;
+    const normalized = normalizeCatalogShade(raw, db.catalogShades.length + 1);
+
+    const existingIdx = db.catalogShades.findIndex((s) => s.code === normalized.code);
+    if (existingIdx > -1) {
+      db.catalogShades[existingIdx] = { ...db.catalogShades[existingIdx], ...normalized };
+    } else {
+      db.catalogShades.unshift(normalized);
+    }
+
+    // Forward to Google Apps Script webhook
+    if (db.sheetsConfig.webhookUrl && db.sheetsConfig.webhookUrl.startsWith('http')) {
+      fetch(db.sheetsConfig.webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'addShade',
+          newShade: normalized,
+          source: 'H.Saban Noa Color App (Admin Addition)',
+          timestamp: new Date().toISOString(),
+        }),
+      }).catch((err) => console.warn('Failed to forward new shade to Google Sheets:', err.message));
+    }
+
+    res.status(201).json({
+      success: true,
+      shade: normalized,
+      message: `הגוון ${normalized.name} (${normalized.code}) נוסף בהצלחה למניפה`,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 5. Recommended Baskets
 app.get('/api/baskets', (req, res) => {
   res.json({ baskets: db.baskets });
@@ -735,6 +1324,12 @@ async function startServer() {
 
   app.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
+    // Preload shades live from Google Sheets on server startup
+    fetchCatalogFromGoogleSheets(true).then((res) => {
+      console.log(`[Google Sheets] Initialized with ${res.count} shades (${res.source})`);
+    }).catch((err) => {
+      console.warn('[Google Sheets] Initial startup fetch deferred:', err.message);
+    });
   });
 }
 

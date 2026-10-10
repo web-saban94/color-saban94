@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Order, SheetsSyncStatus } from '../types';
+import { Order, SheetsSyncStatus, Shade } from '../types';
 import { soundService } from '../utils/audioChime';
 import { 
   X, 
@@ -14,14 +14,25 @@ import {
   Copy, 
   Check, 
   Layers,
-  Database
+  Database,
+  ExternalLink,
+  Palette,
+  Plus,
+  Pipette,
+  Beaker
 } from 'lucide-react';
+import { TintDispenserModal } from './TintDispenserModal';
 
 interface AdminDashboardProps {
   isOpen: boolean;
   onClose: () => void;
   orders: Order[];
   onUpdateOrderStatus: (orderId: string, newStatus: Order['status']) => void;
+  catalogShades?: Shade[];
+  onRefreshCatalog?: () => void;
+  isSyncingCatalog?: boolean;
+  onInjectTintPastes?: () => Promise<void>;
+  isInjectingPastes?: boolean;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
@@ -29,11 +40,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onClose,
   orders,
   onUpdateOrderStatus,
+  catalogShades = [],
+  onRefreshCatalog,
+  isSyncingCatalog = false,
+  onInjectTintPastes,
+  isInjectingPastes = false,
 }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [pinCode, setPinCode] = useState('');
   const [pinError, setPinError] = useState(false);
-  const [activeTab, setActiveTab] = useState<'orders' | 'shades' | 'baskets' | 'sync'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'shades' | 'pastes' | 'baskets' | 'sync'>('orders');
+  const [shadesSubTab, setShadesSubTab] = useState<'catalog' | 'log'>('catalog');
+  const [activeDispenserShade, setActiveDispenserShade] = useState<Shade | null>(null);
 
   const [shadesHistory, setShadesHistory] = useState<any[]>([]);
   const [basketsHistory, setBasketsHistory] = useState<any[]>([]);
@@ -43,6 +61,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [webhookUrlInput, setWebhookUrlInput] = useState('');
   const [copiedScript, setCopiedScript] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
+
+  // New Shade Add Form State
+  const [isAddShadeOpen, setIsAddShadeOpen] = useState(false);
+  const [newShadeCode, setNewShadeCode] = useState('');
+  const [newShadeName, setNewShadeName] = useState('');
+  const [newShadeManufacturer, setNewShadeManufacturer] = useState('טמבור');
+  const [newShadeHex, setNewShadeHex] = useState('#D7DDD4');
+  const [newShadeFamily, setNewShadeFamily] = useState('לבן ופנינה');
+  const [newShadeSurface, setNewShadeSurface] = useState('קירות פנים');
+  const [newShadeFinish, setNewShadeFinish] = useState('מט משי');
+  const [newShadeCollection, setNewShadeCollection] = useState('המניפה – טמבור');
+  const [newShadePage, setNewShadePage] = useState('');
+  const [isAddingShade, setIsAddingShade] = useState(false);
 
   // Fetch admin data on open
   useEffect(() => {
@@ -123,6 +154,48 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       localStorage.removeItem('saban_noa_chat_history');
       alert('זיכרון השיחה אופס.');
       soundService.playChime('tap');
+    }
+  };
+
+  const handleAddShadeToCatalog = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newShadeCode.trim() || !newShadeName.trim()) {
+      alert('נא למלא קוד גוון ושם גוון');
+      return;
+    }
+    setIsAddingShade(true);
+    soundService.playChime('tap');
+
+    try {
+      const res = await fetch('/api/sheets/shades', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: newShadeCode.trim(),
+          name: newShadeName.trim(),
+          manufacturer: newShadeManufacturer,
+          hex: newShadeHex,
+          family: newShadeFamily,
+          surfaceType: newShadeSurface,
+          finishType: newShadeFinish,
+          collectionName: newShadeCollection,
+          fandeckPage: newShadePage.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        soundService.playChime('notification');
+        setIsAddShadeOpen(false);
+        setNewShadeCode('');
+        setNewShadeName('');
+        setNewShadePage('');
+        if (onRefreshCatalog) onRefreshCatalog();
+        alert('הגוון נוסף בהצלחה למניפה ונשלח לסנכרון ב-Google Sheets!');
+      }
+    } catch (err: any) {
+      alert('שגיאה בהוספת גוון: ' + err.message);
+    } finally {
+      setIsAddingShade(false);
     }
   };
 
@@ -310,7 +383,19 @@ function doPost(e) {
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                גוונים שנבחרו ({shadesHistory.length})
+                מניפת גוונים ({catalogShades.length})
+              </button>
+
+              <button
+                onClick={() => { setActiveTab('pastes'); soundService.playChime('tap'); }}
+                className={`px-3.5 py-2 text-xs font-bold rounded-t-xl transition whitespace-nowrap flex items-center gap-1.5 ${
+                  activeTab === 'pastes'
+                    ? 'bg-white text-[#0B3B60] border-t-2 border-t-[#0B3B60] shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Pipette className="w-3.5 h-3.5 text-amber-600" />
+                <span>מכונת גיוון ומשחות ({catalogShades.length})</span>
               </button>
 
               <button
@@ -396,48 +481,502 @@ function doPost(e) {
                 </div>
               )}
 
-              {/* TAB 2: SHADES LOG */}
+              {/* TAB 2: SHADES & CATALOG (LIVE GOOGLE SHEETS INTEGRATION) */}
               {activeTab === 'shades' && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-700">היסטוריית גוונים שנבחרו בקנבס ובצ׳אט</span>
-                    <a
-                      href="/api/sheets/export/shades"
-                      download="shades.csv"
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition shadow-xs"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      <span>הורד גיליון גוונים CSV</span>
-                    </a>
+                <div className="space-y-4">
+                  {/* Sub-tab Navigation */}
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => { setShadesSubTab('catalog'); soundService.playChime('tap'); }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                          shadesSubTab === 'catalog'
+                            ? 'bg-[#0B3B60] text-white shadow-xs'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                      >
+                        <Palette className="w-3.5 h-3.5" />
+                        <span>מניפת גוונים ארצית ({catalogShades.length})</span>
+                      </button>
+
+                      <button
+                        onClick={() => { setShadesSubTab('log'); soundService.playChime('tap'); }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                          shadesSubTab === 'log'
+                            ? 'bg-[#0B3B60] text-white shadow-xs'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                      >
+                        <Layers className="w-3.5 h-3.5" />
+                        <span>לוג בדיקות בקנבס ({shadesHistory.length})</span>
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <a
+                        href="https://docs.google.com/spreadsheets/d/1vVE0ZOag1WuVMtFfLjB1u0nosRQ67C-s0FerqYH_Jdc/edit#gid=0"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition flex items-center gap-1"
+                        title="פתח גיליון מניפות ב-Google Sheets"
+                      >
+                        <FileSpreadsheet className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">פתח גיליון מניפה</span>
+                      </a>
+
+                      {shadesSubTab === 'catalog' && onRefreshCatalog && (
+                        <button
+                          onClick={() => { onRefreshCatalog(); soundService.playChime('tap'); }}
+                          disabled={isSyncingCatalog}
+                          className="px-3 py-1.5 rounded-xl text-xs font-bold bg-sky-50 text-[#0B3B60] border border-sky-200 hover:bg-sky-100 transition flex items-center gap-1.5 shadow-xs"
+                        >
+                          <RefreshCw className={`w-3.5 h-3.5 ${isSyncingCatalog ? 'animate-spin' : ''}`} />
+                          <span>{isSyncingCatalog ? 'מסנכרן...' : 'רענן מניפה מ-Sheets'}</span>
+                        </button>
+                      )}
+
+                      {shadesSubTab === 'catalog' && (
+                        <button
+                          onClick={() => { setIsAddShadeOpen(!isAddShadeOpen); soundService.playChime('tap'); }}
+                          className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#0B3B60] text-white hover:bg-[#072942] transition flex items-center gap-1 shadow-xs"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>{isAddShadeOpen ? 'סגור טופס' : 'הוסף גוון למניפה'}</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-xs">
-                    <table className="w-full text-right text-xs">
-                      <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
-                        <tr>
-                          <th className="p-3">דוגמית</th>
-                          <th className="p-3">שם וקוד גוון</th>
-                          <th className="p-3">יצרן</th>
-                          <th className="p-3">סניף מיועד</th>
-                          <th className="p-3">מקור</th>
-                          <th className="p-3">זמן בחירה</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {shadesHistory.map((s, idx) => (
-                          <tr key={idx} className="hover:bg-slate-50/50">
-                            <td className="p-3">
-                              <div className="w-5 h-5 rounded border border-black/10" style={{ backgroundColor: s.hex }} />
-                            </td>
-                            <td className="p-3 font-bold text-slate-800">{s.shadeName} ({s.shadeCode})</td>
-                            <td className="p-3 text-slate-600">{s.manufacturer}</td>
-                            <td className="p-3 text-slate-600">סניף {s.branch}</td>
-                            <td className="p-3 text-sky-800 font-medium">{s.source}</td>
-                            <td className="p-3 text-slate-400 font-mono text-[11px]">{new Date(s.timestamp).toLocaleTimeString('he-IL')}</td>
+                  {/* Add New Shade Form (Collapsible) */}
+                  {shadesSubTab === 'catalog' && isAddShadeOpen && (
+                    <form onSubmit={handleAddShadeToCatalog} className="bg-sky-50/70 border border-sky-200 rounded-2xl p-4 space-y-3 animate-in fade-in">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-bold text-[#0B3B60] flex items-center gap-1.5">
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>הוספת גוון חדש למניפה ול-Google Sheets</span>
+                        </h4>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] text-slate-500 font-medium">תצוגה מקדימה:</span>
+                          <div className="w-6 h-6 rounded-md border border-black/20 shadow-xs" style={{ backgroundColor: newShadeHex }} />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-600 mb-1">קוד גוון (חובה):</label>
+                          <input
+                            type="text"
+                            placeholder="לדוגמה: WW2300"
+                            value={newShadeCode}
+                            onChange={(e) => setNewShadeCode(e.target.value)}
+                            required
+                            className="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:border-[#0B3B60]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-600 mb-1">שם הגוון (חובה):</label>
+                          <input
+                            type="text"
+                            placeholder="לדוגמה: פנינה זוהרת"
+                            value={newShadeName}
+                            onChange={(e) => setNewShadeName(e.target.value)}
+                            required
+                            className="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:border-[#0B3B60]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-600 mb-1">חברה / יצרן:</label>
+                          <select
+                            value={newShadeManufacturer}
+                            onChange={(e) => setNewShadeManufacturer(e.target.value)}
+                            className="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:border-[#0B3B60]"
+                          >
+                            <option value="טמבור">טמבור</option>
+                            <option value="נירלט">נירלט</option>
+                            <option value="יעקבי">יעקבי</option>
+                            <option value="ח.סבן">ח.סבן (בלעדי)</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-600 mb-1">קוד צבע HEX:</label>
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="color"
+                              value={newShadeHex.startsWith('#') ? newShadeHex : '#D7DDD4'}
+                              onChange={(e) => setNewShadeHex(e.target.value.toUpperCase())}
+                              className="w-8 h-8 rounded-lg cursor-pointer border border-slate-300 p-0.5"
+                            />
+                            <input
+                              type="text"
+                              value={newShadeHex}
+                              onChange={(e) => setNewShadeHex(e.target.value)}
+                              className="w-full px-2 py-1.5 rounded-xl border border-slate-300 bg-white font-mono text-xs"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-600 mb-1">משפחת גוון:</label>
+                          <select
+                            value={newShadeFamily}
+                            onChange={(e) => setNewShadeFamily(e.target.value)}
+                            className="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:border-[#0B3B60]"
+                          >
+                            <option value="לבן ופנינה">לבן ופנינה</option>
+                            <option value="אבן וחול">אבן וחול</option>
+                            <option value="אפורים מודרניים">אפורים מודרניים</option>
+                            <option value="מרווה וטבע">מרווה וטבע</option>
+                            <option value="כחול Saban">כחול Saban</option>
+                            <option value="עץ טבעי ולכות">עץ טבעי ולכות</option>
+                            <option value="מתכת מונע חלודה">מתכת מונע חלודה</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-600 mb-1">סוג משטח:</label>
+                          <select
+                            value={newShadeSurface}
+                            onChange={(e) => setNewShadeSurface(e.target.value as any)}
+                            className="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:border-[#0B3B60]"
+                          >
+                            <option value="קירות פנים">קירות פנים</option>
+                            <option value="קירות חוץ">קירות חוץ</option>
+                            <option value="תקרה וגבס">תקרה וגבס</option>
+                            <option value="עץ ולכות">עץ ולכות</option>
+                            <option value="מתכת DTM">מתכת DTM</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-600 mb-1">גימור מומלץ:</label>
+                          <select
+                            value={newShadeFinish}
+                            onChange={(e) => setNewShadeFinish(e.target.value as any)}
+                            className="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:border-[#0B3B60]"
+                          >
+                            <option value="מט משי">מט משי</option>
+                            <option value="מט מהודר">מט מהודר</option>
+                            <option value="חצי מבריק">חצי מבריק</option>
+                            <option value="מבריק">מבריק</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-600 mb-1">עמוד במניפה (אופציונלי):</label>
+                          <input
+                            type="text"
+                            placeholder="עמ׳ 42"
+                            value={newShadePage}
+                            onChange={(e) => setNewShadePage(e.target.value)}
+                            className="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:border-[#0B3B60]"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setIsAddShadeOpen(false)}
+                          className="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-200"
+                        >
+                          ביטול
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={isAddingShade}
+                          className="px-4 py-1.5 rounded-xl text-xs font-bold bg-[#0B3B60] text-white hover:bg-[#072942] transition shadow-xs flex items-center gap-1.5"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>{isAddingShade ? 'מוסיף ומסנכרן...' : 'הוסף גוון וסנכרן לגיליון'}</span>
+                        </button>
+                      </div>
+                    </form>
+                  )}
+
+                  {/* Sub-tab 1: LIVE GOOGLE SHEETS SHADES CATALOG */}
+                  {shadesSubTab === 'catalog' && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs text-slate-500">
+                        <span>מציג {catalogShades.length} גוונים מתוך טאב "מניפת גוונים - קטלוג ארצי" ב-Google Sheets</span>
+                        <span className="font-mono text-[11px]">מזהה גיליון: 1vVE0ZOag1WuVMtFfLjB1u0nosRQ67C-s0FerqYH_Jdc</span>
+                      </div>
+
+                      <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-xs max-h-96 overflow-y-auto">
+                        <table className="w-full text-right text-xs">
+                          <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 sticky top-0 z-10">
+                            <tr>
+                              <th className="p-2.5">דוגמית</th>
+                              <th className="p-2.5">קוד גוון</th>
+                              <th className="p-2.5">שם הגוון</th>
+                              <th className="p-2.5">יצרן / מותג</th>
+                              <th className="p-2.5">מניפה / קולקציה</th>
+                              <th className="p-2.5">קוד HEX</th>
+                              <th className="p-2.5">משפחת צבע</th>
+                              <th className="p-2.5">סוג משטח</th>
+                              <th className="p-2.5">עמוד</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {catalogShades.map((shade, idx) => (
+                              <tr key={shade.id || idx} className="hover:bg-slate-50/70 transition">
+                                <td className="p-2.5">
+                                  <div
+                                    className="w-6 h-6 rounded-md border border-black/15 shadow-2xs"
+                                    style={{ backgroundColor: shade.hex }}
+                                  />
+                                </td>
+                                <td className="p-2.5 font-mono font-bold text-slate-900">{shade.code}</td>
+                                <td className="p-2.5 font-bold text-slate-800">{shade.name}</td>
+                                <td className="p-2.5">
+                                  <span className="bg-sky-50 text-[#0B3B60] font-bold px-1.5 py-0.5 rounded text-[11px]">
+                                    {shade.manufacturer}
+                                  </span>
+                                </td>
+                                <td className="p-2.5 text-slate-600 truncate max-w-[140px]">{shade.collectionName || 'המניפה'}</td>
+                                <td className="p-2.5 font-mono text-[11px] text-slate-500">{shade.hex}</td>
+                                <td className="p-2.5 text-slate-700">{shade.family}</td>
+                                <td className="p-2.5 text-slate-600">{shade.surfaceType}</td>
+                                <td className="p-2.5 text-slate-400 font-mono text-[11px]">{shade.fandeckPage || '-'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Sub-tab 2: CUSTOMER TESTS LOG */}
+                  {shadesSubTab === 'log' && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-700">היסטוריית גוונים שנבחרו בקנבס ובצ׳אט (לוג שימושים)</span>
+                        <a
+                          href="/api/sheets/export/shades"
+                          download="saban_shades_log.csv"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition shadow-xs"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span>הורד לוג גוונים CSV</span>
+                        </a>
+                      </div>
+
+                      <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-xs max-h-80 overflow-y-auto">
+                        <table className="w-full text-right text-xs">
+                          <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 sticky top-0 z-10">
+                            <tr>
+                              <th className="p-3">דוגמית</th>
+                              <th className="p-3">שם וקוד גוון</th>
+                              <th className="p-3">יצרן</th>
+                              <th className="p-3">סניף מיועד</th>
+                              <th className="p-3">מקור</th>
+                              <th className="p-3">זמן בחירה</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {shadesHistory.map((s, idx) => (
+                              <tr key={idx} className="hover:bg-slate-50/50">
+                                <td className="p-3">
+                                  <div className="w-5 h-5 rounded border border-black/10" style={{ backgroundColor: s.hex }} />
+                                </td>
+                                <td className="p-3 font-bold text-slate-800">{s.shadeName} ({s.shadeCode})</td>
+                                <td className="p-3 text-slate-600">{s.manufacturer}</td>
+                                <td className="p-3 text-slate-600">סניף {s.branch}</td>
+                                <td className="p-3 text-sky-800 font-medium">{s.source}</td>
+                                <td className="p-3 text-slate-400 font-mono text-[11px]">{new Date(s.timestamp).toLocaleTimeString('he-IL')}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB: TINT PASTES & AUTOMATIC DISPENSER */}
+              {activeTab === 'pastes' && (
+                <div className="space-y-4">
+                  {/* Pastes Banner with Live Inject & Sync Action */}
+                  <div className="bg-gradient-to-r from-[#0B3B60] via-[#0D4B7A] to-[#0284C7] text-white p-4 rounded-2xl shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0 border border-white/20">
+                        <Pipette className="w-5 h-5 text-amber-300" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-black">מערך הזרקת משחות גוונים ממוחשב – ח.סבן (סניף תלמיד 6 & החרש)</span>
+                          <span className="text-[10px] font-bold bg-emerald-500/30 text-emerald-200 border border-emerald-400/30 px-2 py-0.5 rounded-full">
+                            מכונה מחוברת אונליין
+                          </span>
+                        </div>
+                        <p className="text-xs text-sky-100/90 mt-0.5">
+                          נוסחאות הזרקה מדויקות לפי מ״ל ושוטים (1/48 oz) למניפות טמבור, נירלט, יעקבי ו-RAL
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+                      {onInjectTintPastes && (
+                        <button
+                          onClick={() => {
+                            onInjectTintPastes();
+                            soundService.playChime('tap');
+                          }}
+                          disabled={isInjectingPastes}
+                          className={`px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 text-xs font-bold transition shadow-sm flex items-center gap-1.5 ${
+                            isInjectingPastes ? 'opacity-75 cursor-not-allowed' : ''
+                          }`}
+                        >
+                          <Pipette className={`w-4 h-4 ${isInjectingPastes ? 'animate-bounce' : ''}`} />
+                          <span>{isInjectingPastes ? 'מזריק ומסנכרן לגיליון...' : '💉 הזרק משחות וסנכרן לגיליון'}</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Highlights Summary Cards */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+                      <span className="text-[11px] font-semibold text-slate-500 block mb-1">גוונים בעלי נוסחה</span>
+                      <span className="text-lg font-black text-slate-900">{catalogShades.length} / {catalogShades.length}</span>
+                      <span className="text-[10px] text-emerald-600 block mt-0.5 font-medium">100% כיסוי קטלוג</span>
+                    </div>
+
+                    <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+                      <span className="text-[11px] font-semibold text-slate-500 block mb-1">בסיסי גיוון נתמכים</span>
+                      <span className="text-lg font-black text-slate-900">BW, BP, BD, BC</span>
+                      <span className="text-[10px] text-slate-500 block mt-0.5">לבן, פסטל, עמוק, לכה</span>
+                    </div>
+
+                    <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+                      <span className="text-[11px] font-semibold text-slate-500 block mb-1">דיוק מזרק מכונה</span>
+                      <span className="text-lg font-black text-slate-900">0.05 מ״ל</span>
+                      <span className="text-[10px] text-slate-500 block mt-0.5 font-mono">1/48 Fl. Oz.</span>
+                    </div>
+
+                    <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+                      <span className="text-[11px] font-semibold text-slate-500 block mb-1">סנכרון Google Sheets</span>
+                      <span className="text-lg font-black text-emerald-700">בזמן אמת</span>
+                      <span className="text-[10px] text-emerald-600 block mt-0.5 font-medium">טאב ייעודי פעיל</span>
+                    </div>
+                  </div>
+
+                  {/* Colorant Canisters Stock Overview */}
+                  <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-xs space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Beaker className="w-4 h-4 text-saban-blue" />
+                        <h4 className="text-xs font-bold text-slate-900">מפלסי מיכלי משחות גוונים (קולורנטים) במכונת הגיוון</h4>
+                      </div>
+                      <span className="text-[11px] text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded">
+                        כל המיכלים בתקינות גבוהה
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2.5">
+                      {[
+                        { code: 'B', name: 'שחור פחם', hex: '#1E1E1E', level: 84 },
+                        { code: 'Y', name: 'אוכרה צהובה', hex: '#C5952B', level: 92 },
+                        { code: 'C', name: 'כחול פתאלו', hex: '#1B4D8A', level: 78 },
+                        { code: 'R', name: 'אדום תחמוצת', hex: '#9E342B', level: 88 },
+                        { code: 'G', name: 'ירוק פתאלו', hex: '#1D6E42', level: 95 },
+                        { code: 'M', name: 'מגנטה אורגנית', hex: '#A31D5E', level: 70 },
+                        { code: 'YL', name: 'צהוב שמש', hex: '#E5B810', level: 85 },
+                        { code: 'U', name: 'אומברה גולמית', hex: '#5A4632', level: 82 },
+                        { code: 'W', name: 'לבן טיטניום', hex: '#F5F5F7', level: 90 },
+                        { code: 'O', name: 'כתום אורגני', hex: '#DE5D1B', level: 76 },
+                      ].map((c) => (
+                        <div key={c.code} className="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="w-4 h-4 rounded shadow-inner flex items-center justify-center font-bold text-[9px] text-white" style={{ backgroundColor: c.hex }}>
+                              {c.code}
+                            </span>
+                            <span className="text-xs font-mono font-bold text-slate-700">{c.level}%</span>
+                          </div>
+                          <div className="text-[11px] font-semibold text-slate-800 truncate mb-1">{c.name}</div>
+                          <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                            <div className="bg-sky-600 h-1.5 rounded-full" style={{ width: `${c.level}%` }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Shades Pastes Formulas Table */}
+                  <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+                    <div className="p-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-800">
+                        טבלת מפרט הזרקת משחות גוונים לכל גוון במניפה ({catalogShades.length} גוונים)
+                      </span>
+                      <span className="text-[11px] text-slate-500">לחץ ״הזרק״ לפתיחת סימולטור ומחשבון נפחים</span>
+                    </div>
+
+                    <div className="overflow-x-auto max-h-[420px]">
+                      <table className="w-full text-right text-xs">
+                        <thead className="bg-slate-50 text-slate-500 font-semibold sticky top-0 border-b border-slate-200 z-10">
+                          <tr>
+                            <th className="p-3">דוגמית</th>
+                            <th className="p-3">קוד ושם</th>
+                            <th className="p-3">יצרן</th>
+                            <th className="p-3">בסיס גיוון</th>
+                            <th className="p-3">נוסחת משחות מוזרקות (מ״ל לליטר)</th>
+                            <th className="p-3 text-center">סה״כ מ״ל</th>
+                            <th className="p-3 text-center">ערבול (שנ׳)</th>
+                            <th className="p-3 text-center">פעולה</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {catalogShades.map((s, idx) => {
+                            const formula = s.tintFormula;
+                            return (
+                              <tr key={s.id || idx} className="hover:bg-slate-50/70 transition-colors">
+                                <td className="p-3">
+                                  <div className="w-6 h-6 rounded-lg border border-black/10 shadow-xs" style={{ backgroundColor: s.hex }} />
+                                </td>
+                                <td className="p-3">
+                                  <span className="font-bold text-slate-900 block">{s.name}</span>
+                                  <span className="text-[11px] font-mono text-slate-500">{s.code}</span>
+                                </td>
+                                <td className="p-3 text-slate-700 font-medium">{s.manufacturer}</td>
+                                <td className="p-3">
+                                  <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-blue-50 text-blue-800 border border-blue-200">
+                                    {formula?.baseCode || 'BW'}
+                                  </span>
+                                </td>
+                                <td className="p-3 font-mono text-slate-700">
+                                  {formula && formula.pastes.length > 0 ? (
+                                    <div className="flex flex-wrap items-center gap-1.5">
+                                      {formula.pastes.map((p) => (
+                                        <span key={p.pasteCode} className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-800 flex items-center gap-1 text-[11px]">
+                                          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: p.colorHex }} />
+                                          <span>{p.pasteCode}: {p.amountMlPerLiter}ml</span>
+                                        </span>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <span className="text-slate-400 text-[11px]">לבן טהור (ללא הזרקה)</span>
+                                  )}
+                                </td>
+                                <td className="p-3 text-center font-bold text-slate-900 font-mono">
+                                  {formula ? `${formula.totalPastesMlPerLiter} מ״ל` : '0 מ״ל'}
+                                </td>
+                                <td className="p-3 text-center text-slate-600 font-mono">
+                                  {formula?.shakerTimeSeconds || 180}s
+                                </td>
+                                <td className="p-3 text-center">
+                                  <button
+                                    onClick={() => {
+                                      setActiveDispenserShade(s);
+                                      soundService.playChime('tap');
+                                    }}
+                                    className="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100 font-bold text-xs flex items-center gap-1 transition-colors mx-auto"
+                                  >
+                                    <Pipette className="w-3 h-3 text-amber-700" />
+                                    <span>מחשבון</span>
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               )}
@@ -632,6 +1171,17 @@ function doPost(e) {
           </div>
         )}
       </div>
+
+      {activeDispenserShade && (
+        <TintDispenserModal
+          isOpen={Boolean(activeDispenserShade)}
+          onClose={() => setActiveDispenserShade(null)}
+          shade={activeDispenserShade}
+          selectedBranch="תלמיד 6"
+          onSyncToSheet={onInjectTintPastes}
+          isSyncing={isInjectingPastes}
+        />
+      )}
     </div>
   );
 };

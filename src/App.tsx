@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Shade, 
   ProductItem, 
@@ -31,13 +31,22 @@ import {
   ChevronDown,
   Building2,
   CheckCircle2,
-  WifiOff
+  WifiOff,
+  RefreshCw,
+  FileSpreadsheet
 } from 'lucide-react';
 
 export default function App() {
   // Application State
   const [activeTab, setActiveTab] = useState<'canvas' | 'library' | 'chat' | 'scanner'>('canvas');
+  
+  // Dynamic Shades Catalog State (Synchronized live with Google Sheets)
+  const [shades, setShades] = useState<Shade[]>(SHADES);
   const [selectedShade, setSelectedShade] = useState<Shade>(SHADES[0]); // WW2202 "לראות צלול"
+  const [isSyncingShades, setIsSyncingShades] = useState(false);
+  const [shadesSource, setShadesSource] = useState<'google_sheets_live' | 'cache'>('google_sheets_live');
+  const [lastShadesSyncTime, setLastShadesSyncTime] = useState<string | null>(null);
+
   const [selectedBranch, setSelectedBranch] = useState<BranchId>('תלמיד 6');
   const [isBranchDropdownOpen, setIsBranchDropdownOpen] = useState(false);
 
@@ -67,6 +76,66 @@ export default function App() {
   // Notification Toast State
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  // Live Sync with Google Sheets ("מניפת גוונים - קטלוג ארצי")
+  const fetchLiveShades = useCallback(async (force: boolean = false) => {
+    setIsSyncingShades(true);
+    try {
+      const res = await fetch(`/api/sheets/shades?force=${force}`);
+      const data = await res.json();
+      if (data && Array.isArray(data.shades) && data.shades.length > 0) {
+        setShades(data.shades);
+        setShadesSource(data.source || 'google_sheets_live');
+        const nowTime = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+        setLastShadesSyncTime(nowTime);
+
+        // Keep current selected shade in sync
+        setSelectedShade((prev) => {
+          const match = data.shades.find((s: Shade) => s.code === prev.code || s.id === prev.id);
+          return match || data.shades[0];
+        });
+
+        if (force) {
+          showToast(`🎨 סונכרנו ${data.shades.length} גוונים מ-Google Sheets בזמן אמת!`);
+          soundService.playChime('notification');
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to fetch live shades from Google Sheets:', err);
+    } finally {
+      setIsSyncingShades(false);
+    }
+  }, []);
+
+  const [isInjectingPastes, setIsInjectingPastes] = useState(false);
+
+  const handleInjectTintPastes = useCallback(async () => {
+    setIsInjectingPastes(true);
+    soundService.playChime('tap');
+    try {
+      const res = await fetch('/api/sheets/inject-tint-pastes', { method: 'POST' });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.shades)) {
+        setShades(data.shades);
+        const nowTime = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+        setLastShadesSyncTime(nowTime);
+        showToast(`💉 הוזרקו וסונכרנו משחות גוונים עבור ${data.count} גוונים לגיליון!`);
+        soundService.playChime('order');
+      } else {
+        showToast(data.message || 'משחות הגוונים סונכרנו לגיליון');
+      }
+    } catch (err) {
+      console.error('Error injecting tint pastes:', err);
+      showToast('שגיאה בתקשורת בהזרקת משחות גוונים');
+    } finally {
+      setIsInjectingPastes(false);
+    }
+  }, []);
+
   useEffect(() => {
     try {
       localStorage.setItem('saban_noa_cart', JSON.stringify(cart));
@@ -81,6 +150,9 @@ export default function App() {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
+    // Initial load: fetch live shades catalog from Google Sheets
+    fetchLiveShades(false);
+
     // Fetch live orders from backend
     fetch('/api/orders')
       .then((res) => res.json())
@@ -89,16 +161,19 @@ export default function App() {
       })
       .catch(() => {});
 
+    // Real-time periodic synchronization every 45 seconds when online
+    const interval = setInterval(() => {
+      if (typeof navigator !== 'undefined' && navigator.onLine) {
+        fetchLiveShades(false);
+      }
+    }, 45000);
+
     return () => {
+      clearInterval(interval);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
-
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
-  };
+  }, [fetchLiveShades]);
 
   // Cart operations
   const handleAddToCart = (product: ProductItem, shade?: Shade, qty: number = 1) => {
@@ -373,6 +448,18 @@ export default function App() {
               )}
             </div>
 
+            {/* Live Google Sheets Sync Badge & Refresh */}
+            <button
+              onClick={() => fetchLiveShades(true)}
+              disabled={isSyncingShades}
+              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-emerald-300 bg-emerald-50/80 hover:bg-emerald-100/80 text-[11px] font-bold text-emerald-900 transition shadow-xs"
+              title="מניפת גוונים מסונכרנת מ-Google Sheets בזמן אמת. לחץ לרענון מיידי"
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>מניפה מ-Sheets ({shades.length})</span>
+              <RefreshCw className={`w-3 h-3 text-emerald-700 ${isSyncingShades ? 'animate-spin' : ''}`} />
+            </button>
+
             {/* Cart Trigger Button */}
             <button
               onClick={() => {
@@ -428,12 +515,12 @@ export default function App() {
                     onClick={() => { setActiveTab('library'); soundService.playChime('tap'); }}
                     className="text-[11px] font-bold text-[#0B3B60] hover:underline"
                   >
-                    כל הספרייה ({SHADES.length})
+                    כל הספרייה ({shades.length})
                   </button>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
-                  {SHADES.slice(0, 6).map((shade) => {
+                  {shades.slice(0, 6).map((shade) => {
                     const isSelected = selectedShade.id === shade.id;
                     return (
                       <button
@@ -503,7 +590,7 @@ export default function App() {
             <div className="flex items-center justify-between pb-2 border-b border-slate-200">
               <div>
                 <h3 className="text-lg font-black text-slate-900">ספריית גוונים ומניפות צבע</h3>
-                <p className="text-xs text-slate-500">קולקציות טמבור, נירלט, יעקבי וח.סבן לקירות פנים, עץ ומתכת</p>
+                <p className="text-xs text-slate-500">קולקציות טמבור, נירלט, יעקבי וח.סבן לקירות פנים, עץ ומתכת – מסונכרנות מ-Google Sheets</p>
               </div>
               <button
                 onClick={() => { setActiveTab('canvas'); soundService.playChime('tap'); }}
@@ -514,12 +601,19 @@ export default function App() {
             </div>
 
             <ShadeLibrary
-              shades={SHADES}
+              shades={shades}
               activeShade={selectedShade}
               onSelectShadeForCanvas={handleSelectShadeForCanvas}
               onSendToChat={handleSendShadeToChat}
               onAddToCart={handleAddToCart}
               wallPaintProduct={wallPaintProduct}
+              onRefreshShades={() => fetchLiveShades(true)}
+              isSyncingShades={isSyncingShades}
+              lastShadesSyncTime={lastShadesSyncTime}
+              shadesSource={shadesSource}
+              onInjectTintPastes={handleInjectTintPastes}
+              isInjectingPastes={isInjectingPastes}
+              selectedBranch={selectedBranch}
             />
           </div>
         )}
@@ -543,7 +637,7 @@ export default function App() {
             <WallAiScanner
               initialImage={scannerImage}
               allProducts={PRODUCTS}
-              allShades={SHADES}
+              allShades={shades}
               onAddToCart={handleAddToCart}
               onSelectShadeForCanvas={handleSelectShadeForCanvas}
               onBackToCanvas={() => setActiveTab('canvas')}
@@ -620,6 +714,11 @@ export default function App() {
         onClose={() => setIsAdminOpen(false)}
         orders={orders}
         onUpdateOrderStatus={handleUpdateOrderStatus}
+        catalogShades={shades}
+        onRefreshCatalog={() => fetchLiveShades(true)}
+        isSyncingCatalog={isSyncingShades}
+        onInjectTintPastes={handleInjectTintPastes}
+        isInjectingPastes={isInjectingPastes}
       />
 
       {/* Floating Toast Notification */}

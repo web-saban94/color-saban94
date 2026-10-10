@@ -12,20 +12,42 @@ export interface BranchInfo {
   badge: string;
 }
 
+export interface TintPasteItem {
+  pasteCode: 'B' | 'Y' | 'C' | 'R' | 'G' | 'M' | 'YL' | 'U' | 'W' | 'O' | string;
+  name: string;
+  colorHex: string;
+  amountMlPerLiter: number;
+  shotsPerLiter: number;
+}
+
+export interface TintFormula {
+  base: 'בסיס לבן (BW)' | 'בסיס פסטל (BP)' | 'בסיס מדיום (BM)' | 'בסיס עמוק (BD)' | 'בסיס שקוף/אקסטרה דיפ (BC)' | string;
+  baseCode: 'BW' | 'BP' | 'BM' | 'BD' | 'BC' | string;
+  pastes: TintPasteItem[];
+  totalPastesMlPerLiter: number;
+  formulaSummary: string;
+  machineDispenseNote?: string;
+  shakerTimeSeconds?: number;
+  lastInjectedAt?: string;
+  isSyncedToSheet?: boolean;
+}
+
 export interface Shade {
   id: string;
   name: string;
   code: string;
-  manufacturer: 'טמבור' | 'נירלט' | 'יעקבי' | 'ח.סבן';
+  manufacturer: 'טמבור' | 'נירלט' | 'יעקבי' | 'ח.סבן' | string;
   hex: string;
-  family: 'לבן ופנינה' | 'אבן וחול' | 'אפורים מודרניים' | 'מרווה וטבע' | 'כחול Saban' | 'עץ טבעי ולכות' | 'מתכת מונע חלודה';
+  family: 'לבן ופנינה' | 'אבן וחול' | 'אפורים מודרניים' | 'מרווה וטבע' | 'כחול Saban' | 'עץ טבעי ולכות' | 'מתכת מונע חלודה' | string;
   surfaceType: SurfaceType;
   description: string;
   isPopular?: boolean;
   lightShadeHex?: string;
   darkShadeHex?: string;
   collectionName?: string;
-  finishType?: 'מט משי' | 'מט מהודר' | 'חצי מבריק' | 'מבריק' | 'טקסטורה עדינה';
+  finishType?: 'מט משי' | 'מט מהודר' | 'חצי מבריק' | 'מבריק' | 'טקסטורה עדינה' | string;
+  fandeckPage?: string;
+  tintFormula?: TintFormula;
 }
 
 export interface ProductItem {
