@@ -145,18 +145,20 @@ const db = {
   ] as BasketLog[],
 
   sheetsConfig: {
-    webhookUrl: '',
+    webhookUrl: 'https://script.google.com/macros/s/AKfycbxR0SPWAZooC3ompY4O9ws4GXeiY2O80JghpLR3hBB_TdNgLK5xOLfqtL8tzNvDTcBq/exec',
+    spreadsheetId: '1vVE0ZOag1WuVMtFfLjB1u0nosRQ67C-s0FerqYH_Jdc',
+    spreadsheetUrl: 'https://docs.google.com/spreadsheets/d/1vVE0ZOag1WuVMtFfLjB1u0nosRQ67C-s0FerqYH_Jdc/edit',
     autoSyncEnabled: true,
-    lastSyncTime: new Date(Date.now() - 3600000 * 1.4).toISOString(),
+    lastSyncTime: new Date().toISOString(),
     syncHistory: [
       {
-        timestamp: new Date(Date.now() - 3600000 * 1.4).toISOString(),
+        timestamp: new Date().toISOString(),
         sheet: 'הזמנות',
         count: 2,
         status: 'success',
       },
       {
-        timestamp: new Date(Date.now() - 3600000 * 1.4).toISOString(),
+        timestamp: new Date().toISOString(),
         sheet: 'גוונים שנבחרו',
         count: 2,
         status: 'success',
@@ -511,6 +513,21 @@ app.post('/api/orders', (req, res) => {
       count: db.orders.length,
       status: 'success',
     });
+
+    // Forward live to Google Apps Script Webhook
+    if (db.sheetsConfig.webhookUrl && db.sheetsConfig.webhookUrl.startsWith('http')) {
+      fetch(db.sheetsConfig.webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          order: newOrder,
+          orders: [newOrder],
+          spreadsheetId: db.sheetsConfig.spreadsheetId,
+          source: 'H.Saban Noa Color App (Order Placed)',
+          timestamp: new Date().toISOString(),
+        }),
+      }).catch((err) => console.warn('Live order webhook forwarding error:', err.message));
+    }
 
     res.status(201).json({
       success: true,

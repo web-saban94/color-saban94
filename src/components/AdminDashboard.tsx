@@ -511,9 +511,42 @@ function doPost(e) {
                     )}
                   </div>
 
+                  {/* Connected Spreadsheet Banner */}
+                  <div className="bg-white p-4 rounded-2xl border border-sky-200 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-200 shrink-0">
+                        <FileSpreadsheet className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-900 text-sm">גיליון Google Sheets מקושר ופעיל</span>
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">מחובר לייב</span>
+                        </div>
+                        <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                          מזהה גיליון: 1vVE0ZOag1WuVMtFfLjB1u0nosRQ67C-s0FerqYH_Jdc
+                        </div>
+                      </div>
+                    </div>
+
+                    <a
+                      href="https://docs.google.com/spreadsheets/d/1vVE0ZOag1WuVMtFfLjB1u0nosRQ67C-s0FerqYH_Jdc/edit"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold transition shadow-xs flex items-center gap-1.5 whitespace-nowrap"
+                    >
+                      <FileSpreadsheet className="w-3.5 h-3.5" />
+                      <span>פתח גיליון בחלון חדש</span>
+                    </a>
+                  </div>
+
                   {/* Webhook Configuration */}
                   <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-3 text-xs">
-                    <h5 className="font-bold text-slate-900">חיבור Webhook של Google Apps Script (אופציונלי לסנכרון ישיר חי):</h5>
+                    <div className="flex items-center justify-between">
+                      <h5 className="font-bold text-slate-900">כתובת Webhook פעילה (Google Apps Script):</h5>
+                      <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-md">
+                        סנכרון דו-כיווני פעיל
+                      </span>
+                    </div>
                     <div className="flex items-center gap-2">
                       <input
                         type="url"
@@ -524,7 +557,7 @@ function doPost(e) {
                       />
                       <button
                         onClick={handleSaveWebhook}
-                        className="px-4 py-2 rounded-xl bg-[#0B3B60] text-white font-bold hover:bg-[#072942] transition"
+                        className="px-4 py-2 rounded-xl bg-[#0B3B60] text-white font-bold hover:bg-[#072942] transition shadow-xs whitespace-nowrap"
                       >
                         שמור כתובת
                       </button>

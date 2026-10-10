@@ -101,6 +101,8 @@ export interface SheetsSyncStatus {
   totalShadesSynced: number;
   totalBasketsSynced: number;
   webhookUrl: string;
+  spreadsheetId?: string;
+  spreadsheetUrl?: string;
   isConfigured: boolean;
   autoSyncEnabled: boolean;
   syncHistory: {
